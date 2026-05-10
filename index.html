@@ -491,6 +491,40 @@
       display: none !important;
     }
 
+    .timer-panel {
+      display: grid;
+      gap: 12px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: #121710;
+      padding: 12px;
+    }
+
+    .timer-status {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      min-height: 44px;
+      border: 1px solid var(--line);
+      border-radius: 7px;
+      background: #0f130e;
+      padding: 9px 11px;
+    }
+
+    .timer-status span {
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 750;
+    }
+
+    .timer-status strong {
+      font-size: 20px;
+      line-height: 1;
+      letter-spacing: 0;
+      white-space: nowrap;
+    }
+
     @media (max-width: 1060px) {
       .layout {
         grid-template-columns: 1fr;
@@ -642,6 +676,24 @@
             <button id="testSound" type="button">소리 테스트</button>
           </div>
 
+          <div class="timer-panel">
+            <div class="grid-2">
+              <label>
+                fantasia 예약(분)
+                <input id="fantasiaMinutes" type="number" min="0" step="0.1" value="10">
+              </label>
+              <div class="timer-status">
+                <span>fantasia까지</span>
+                <strong id="fantasiaRemaining">-</strong>
+              </div>
+            </div>
+            <div class="button-row">
+              <button id="fantasiaStart" type="button">fantasia 시작</button>
+              <button id="fantasiaStop" class="stop" type="button" disabled>fantasia 취소</button>
+              <button id="fantasiaTest" type="button">fantasia 테스트</button>
+            </div>
+          </div>
+
           <div class="capture-area">
             <div id="previewWrap" class="preview-wrap">
               <video id="sourceVideo" autoplay playsinline muted></video>
@@ -701,6 +753,7 @@
   </main>
 
   <audio id="alarmAudio" src="chicken.mp3" preload="auto"></audio>
+  <audio id="fantasiaAudio" src="fantasia.mp3" preload="auto"></audio>
 
   <script>
     const $ = (id) => document.getElementById(id);
@@ -727,6 +780,11 @@
       notifyOffsetSec: $("notifyOffsetSec"),
       repeatAfterSec: $("repeatAfterSec"),
       alarmVolume: $("alarmVolume"),
+      fantasiaMinutes: $("fantasiaMinutes"),
+      fantasiaStart: $("fantasiaStart"),
+      fantasiaStop: $("fantasiaStop"),
+      fantasiaTest: $("fantasiaTest"),
+      fantasiaRemaining: $("fantasiaRemaining"),
       selectScreen: $("selectScreen"),
       singleRead: $("singleRead"),
       startBtn: $("startBtn"),
@@ -745,7 +803,8 @@
       cooldownText: $("cooldownText"),
       remainingText: $("remainingText"),
       log: $("log"),
-      alarmAudio: $("alarmAudio")
+      alarmAudio: $("alarmAudio"),
+      fantasiaAudio: $("fantasiaAudio")
     };
 
     const STORAGE_KEY = "cooldown-reminder-settings-v1";
@@ -763,6 +822,10 @@
       timerId: null,
       tickerId: null,
       nextPlayAt: null,
+      cooldownHistory: [],
+      fantasiaTimerId: null,
+      fantasiaTickerId: null,
+      fantasiaPlayAt: null,
       crop: { x: 0, y: 0, size: 25 },
       videoBox: null,
       drag: null
@@ -849,6 +912,7 @@
           notifyOffsetSec: readNumber(els.notifyOffsetSec, 0),
           repeatAfterSec: readNumber(els.repeatAfterSec, 3),
           alarmVolume: Math.min(1, Math.max(0, readNumber(els.alarmVolume, 1))),
+          fantasiaMinutes: Math.max(0, readNumber(els.fantasiaMinutes, 10)),
           crop: { ...state.crop }
         },
         saveSettings: els.saveSettings.checked
@@ -873,6 +937,7 @@
         els.notifyOffsetSec.value = settings.capture.notifyOffsetSec ?? 0;
         els.repeatAfterSec.value = settings.capture.repeatAfterSec ?? 3;
         els.alarmVolume.value = settings.capture.alarmVolume ?? 1;
+        els.fantasiaMinutes.value = settings.capture.fantasiaMinutes ?? 10;
         if (settings.capture.crop) {
           state.crop = {
             x: Number(settings.capture.crop.x) || 0,
@@ -1090,25 +1155,45 @@
       const imageBase64 = captureRegion();
       setStatus("AI 인식 중", "running");
       const startedAt = performance.now();
-      const text = await callGeminiApi(settings, imageBase64);
-      const latencySec = (performance.now() - startedAt) / 1000;
-      const parsed = parseCooldownNumber(text);
-      if (parsed === null) {
-        throw new Error(`숫자 인식 실패: ${text || "(빈 응답)"}`);
+      let parsed = null;
+      let usedFallback = false;
+      let failureMessage = "";
+
+      try {
+        const text = await callGeminiApi(settings, imageBase64);
+        parsed = parseCooldownNumber(text);
+        if (parsed === null) {
+          throw new Error(`숫자 인식 실패: ${text || "(빈 응답)"}`);
+        }
+        rememberCooldownResponse(parsed);
+      } catch (error) {
+        const average = getCooldownAverage();
+        if (average === null) {
+          throw new Error(`${error.message} 최근 평균값이 아직 없습니다.`);
+        }
+        parsed = average;
+        usedFallback = true;
+        failureMessage = error.message;
       }
+
+      const latencySec = (performance.now() - startedAt) / 1000;
       const adjustedCooldownSec = Math.max(0, parsed - latencySec);
       const notifyOffsetSec = settings.capture.notifyOffsetSec;
       const waitUntilSoundSec = Math.max(0, adjustedCooldownSec + notifyOffsetSec);
 
-      els.aiAnswer.textContent = String(parsed);
+      els.aiAnswer.textContent = usedFallback ? `평균 ${parsed.toFixed(1)}` : String(parsed);
       els.latencyText.textContent = formatSeconds(latencySec);
       els.cooldownText.textContent = formatSeconds(adjustedCooldownSec);
       els.remainingText.textContent = formatSeconds(waitUntilSoundSec);
 
-      log(`AI=${parsed}, 지연=${latencySec.toFixed(2)}초, 보정=${adjustedCooldownSec.toFixed(2)}초, 알림=${waitUntilSoundSec.toFixed(2)}초 후`);
+      if (usedFallback) {
+        log(`AI 실패(${failureMessage}) → 최근 ${state.cooldownHistory.length}회 평균 ${parsed.toFixed(2)} 적용, 지연=${latencySec.toFixed(2)}초, 알림=${waitUntilSoundSec.toFixed(2)}초 후`);
+      } else {
+        log(`AI=${parsed}, 지연=${latencySec.toFixed(2)}초, 보정=${adjustedCooldownSec.toFixed(2)}초, 알림=${waitUntilSoundSec.toFixed(2)}초 후`);
+      }
       persistSettingsIfEnabled();
 
-      return { parsed, latencySec, adjustedCooldownSec, waitUntilSoundSec };
+      return { parsed, latencySec, adjustedCooldownSec, waitUntilSoundSec, usedFallback };
     }
 
     function parseCooldownNumber(text) {
@@ -1118,6 +1203,20 @@
       if (!match) return null;
       const value = Number.parseFloat(match[0]);
       return Number.isFinite(value) ? value : null;
+    }
+
+    function rememberCooldownResponse(value) {
+      if (!Number.isFinite(value)) return;
+      state.cooldownHistory.push(value);
+      if (state.cooldownHistory.length > 10) {
+        state.cooldownHistory.shift();
+      }
+    }
+
+    function getCooldownAverage() {
+      if (state.cooldownHistory.length === 0) return null;
+      const sum = state.cooldownHistory.reduce((total, value) => total + value, 0);
+      return sum / state.cooldownHistory.length;
     }
 
     async function callGeminiApi(settings, imageBase64) {
@@ -1155,25 +1254,40 @@
       return data;
     }
 
-    async function unlockAudio() {
-      els.alarmAudio.volume = Math.min(1, Math.max(0, readNumber(els.alarmVolume, 1)));
+    function applyAudioVolume(audio) {
+      audio.volume = Math.min(1, Math.max(0, readNumber(els.alarmVolume, 1)));
+    }
+
+    async function unlockAudioElement(audio) {
+      applyAudioVolume(audio);
       try {
-        els.alarmAudio.muted = true;
-        await els.alarmAudio.play();
-        els.alarmAudio.pause();
-        els.alarmAudio.currentTime = 0;
+        audio.muted = true;
+        await audio.play();
+        audio.pause();
+        audio.currentTime = 0;
       } catch (_) {
         // The real alarm play will report a visible log if the browser blocks it.
       } finally {
-        els.alarmAudio.muted = false;
+        audio.muted = false;
       }
     }
 
+    async function unlockAudio() {
+      await unlockAudioElement(els.alarmAudio);
+    }
+
     async function playAlarm() {
-      els.alarmAudio.volume = Math.min(1, Math.max(0, readNumber(els.alarmVolume, 1)));
+      applyAudioVolume(els.alarmAudio);
       els.alarmAudio.currentTime = 0;
       await els.alarmAudio.play();
       log("chicken.mp3를 재생했습니다.");
+    }
+
+    async function playFantasia() {
+      applyAudioVolume(els.fantasiaAudio);
+      els.fantasiaAudio.currentTime = 0;
+      await els.fantasiaAudio.play();
+      log("fantasia.mp3를 재생했습니다.");
     }
 
     function clearTimers() {
@@ -1199,6 +1313,66 @@
           state.tickerId = null;
         }
       }, 200);
+    }
+
+    function clearFantasiaTimer(label = "-") {
+      if (state.fantasiaTimerId) {
+        clearTimeout(state.fantasiaTimerId);
+        state.fantasiaTimerId = null;
+      }
+      if (state.fantasiaTickerId) {
+        clearInterval(state.fantasiaTickerId);
+        state.fantasiaTickerId = null;
+      }
+      state.fantasiaPlayAt = null;
+      els.fantasiaStart.disabled = false;
+      els.fantasiaStop.disabled = true;
+      if (label !== null) {
+        els.fantasiaRemaining.textContent = label;
+      }
+    }
+
+    function startFantasiaTicker() {
+      if (state.fantasiaTickerId) clearInterval(state.fantasiaTickerId);
+      state.fantasiaTickerId = setInterval(() => {
+        if (!state.fantasiaPlayAt) return;
+        const remain = Math.max(0, (state.fantasiaPlayAt - Date.now()) / 1000);
+        els.fantasiaRemaining.textContent = formatSeconds(remain);
+        if (remain <= 0) {
+          clearInterval(state.fantasiaTickerId);
+          state.fantasiaTickerId = null;
+        }
+      }, 200);
+    }
+
+    async function startFantasiaTimer() {
+      const minutes = Math.max(0, readNumber(els.fantasiaMinutes, 10));
+      const delayMs = minutes * 60 * 1000;
+      await unlockAudioElement(els.fantasiaAudio);
+      clearFantasiaTimer(null);
+      state.fantasiaPlayAt = Date.now() + delayMs;
+      els.fantasiaStart.disabled = true;
+      els.fantasiaStop.disabled = false;
+      els.fantasiaRemaining.textContent = formatSeconds(delayMs / 1000);
+      startFantasiaTicker();
+      persistSettingsIfEnabled();
+      log(`fantasia.mp3를 ${minutes}분 후 재생하도록 예약했습니다.`);
+      state.fantasiaTimerId = setTimeout(async () => {
+        try {
+          await playFantasia();
+          clearFantasiaTimer("완료");
+        } catch (error) {
+          clearFantasiaTimer("재생 실패");
+          log(`fantasia 재생 실패: ${error.message}`);
+        }
+      }, delayMs);
+    }
+
+    function stopFantasiaTimer() {
+      clearFantasiaTimer("-");
+      els.fantasiaAudio.pause();
+      els.fantasiaAudio.currentTime = 0;
+      log("fantasia 예약을 취소했습니다.");
     }
 
     async function startLoop() {
@@ -1318,7 +1492,8 @@
         els.studioModelId,
         els.notifyOffsetSec,
         els.repeatAfterSec,
-        els.alarmVolume
+        els.alarmVolume,
+        els.fantasiaMinutes
       ];
       for (const input of persistTargets) {
         input.addEventListener("input", persistSettingsIfEnabled);
@@ -1359,6 +1534,22 @@
           await playAlarm();
         } catch (error) {
           log(`소리 테스트 실패: ${error.message}`);
+        }
+      });
+      els.fantasiaStart.addEventListener("click", async () => {
+        try {
+          await startFantasiaTimer();
+        } catch (error) {
+          clearFantasiaTimer("시작 실패");
+          log(`fantasia 예약 실패: ${error.message}`);
+        }
+      });
+      els.fantasiaStop.addEventListener("click", stopFantasiaTimer);
+      els.fantasiaTest.addEventListener("click", async () => {
+        try {
+          await playFantasia();
+        } catch (error) {
+          log(`fantasia 테스트 실패: ${error.message}`);
         }
       });
 
