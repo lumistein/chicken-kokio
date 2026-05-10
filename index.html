@@ -1,0 +1,1425 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Cooldown Sound Reminder</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #10130f;
+      --panel: #181d17;
+      --panel-2: #20251e;
+      --line: #343b31;
+      --line-2: #4a5443;
+      --text: #f1f5ec;
+      --muted: #aeb8a7;
+      --soft: #d8dfd1;
+      --accent: #f2c94c;
+      --accent-2: #54c6a8;
+      --danger: #ff7b72;
+      --ok: #7ee787;
+      --shadow: 0 20px 50px rgba(0, 0, 0, 0.28);
+      --radius: 8px;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      min-height: 100vh;
+      margin: 0;
+      background:
+        linear-gradient(180deg, rgba(16, 19, 15, 0.86), rgba(16, 19, 15, 1)),
+        repeating-linear-gradient(90deg, rgba(242, 201, 76, 0.06) 0 1px, transparent 1px 84px);
+      color: var(--text);
+    }
+
+    button,
+    input,
+    textarea,
+    select {
+      font: inherit;
+    }
+
+    button {
+      min-height: 40px;
+      border: 1px solid var(--line-2);
+      border-radius: 7px;
+      background: #252c22;
+      color: var(--text);
+      cursor: pointer;
+      transition: border-color 160ms ease, transform 160ms ease, background 160ms ease, opacity 160ms ease;
+    }
+
+    button:hover:not(:disabled) {
+      border-color: #748067;
+      background: #2b3428;
+    }
+
+    button:active:not(:disabled) {
+      transform: translateY(1px);
+    }
+
+    button:disabled {
+      cursor: not-allowed;
+      opacity: 0.46;
+    }
+
+    input,
+    textarea,
+    select {
+      width: 100%;
+      min-height: 40px;
+      border: 1px solid var(--line);
+      border-radius: 7px;
+      background: #0f130e;
+      color: var(--text);
+      outline: none;
+      padding: 9px 11px;
+    }
+
+    textarea {
+      min-height: 124px;
+      resize: vertical;
+      line-height: 1.45;
+    }
+
+    input:focus,
+    textarea:focus,
+    select:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(242, 201, 76, 0.12);
+    }
+
+    label {
+      display: grid;
+      gap: 7px;
+      color: var(--soft);
+      font-size: 13px;
+      font-weight: 650;
+    }
+
+    .shell {
+      width: min(1440px, 100%);
+      margin: 0 auto;
+      padding: 22px;
+    }
+
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 0 0 18px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      min-width: 0;
+    }
+
+    .brand-mark {
+      display: grid;
+      width: 42px;
+      height: 42px;
+      place-items: center;
+      border: 1px solid rgba(242, 201, 76, 0.42);
+      border-radius: 8px;
+      background: linear-gradient(135deg, rgba(242, 201, 76, 0.18), rgba(84, 198, 168, 0.12));
+      color: var(--accent);
+      font-weight: 900;
+    }
+
+    h1,
+    h2,
+    h3,
+    p {
+      margin: 0;
+    }
+
+    h1 {
+      font-size: clamp(22px, 2vw, 30px);
+      letter-spacing: 0;
+      line-height: 1.1;
+    }
+
+    .subtle {
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.5;
+    }
+
+    .status-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 9px;
+      min-height: 36px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      padding: 6px 12px;
+      background: rgba(24, 29, 23, 0.84);
+      color: var(--soft);
+      white-space: nowrap;
+    }
+
+    .status-dot {
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      background: var(--muted);
+      box-shadow: 0 0 0 4px rgba(174, 184, 167, 0.09);
+    }
+
+    .status-pill.running .status-dot {
+      background: var(--ok);
+      box-shadow: 0 0 0 4px rgba(126, 231, 135, 0.12);
+    }
+
+    .status-pill.waiting .status-dot {
+      background: var(--accent);
+      box-shadow: 0 0 0 4px rgba(242, 201, 76, 0.12);
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: minmax(320px, 430px) minmax(0, 1fr);
+      gap: 18px;
+      align-items: start;
+    }
+
+    .panel {
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: rgba(24, 29, 23, 0.92);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    .panel-header {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: center;
+      border-bottom: 1px solid var(--line);
+      padding: 15px 16px;
+      background: rgba(32, 37, 30, 0.86);
+    }
+
+    .panel-title {
+      display: grid;
+      gap: 3px;
+    }
+
+    .panel-title h2 {
+      font-size: 16px;
+      letter-spacing: 0;
+    }
+
+    .panel-body {
+      display: grid;
+      gap: 14px;
+      padding: 16px;
+    }
+
+    .segmented {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 5px;
+      background: #0f130e;
+    }
+
+    .segmented button {
+      min-height: 36px;
+      border-color: transparent;
+      background: transparent;
+      color: var(--muted);
+      font-weight: 700;
+    }
+
+    .segmented button.active {
+      background: #303829;
+      color: var(--text);
+      border-color: #596350;
+    }
+
+    .provider-panel {
+      display: none;
+      gap: 12px;
+    }
+
+    .provider-panel.active {
+      display: grid;
+    }
+
+    .grid-2,
+    .grid-3 {
+      display: grid;
+      gap: 12px;
+    }
+
+    .grid-2 {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .grid-3 {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .button-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 9px;
+    }
+
+    .button-row > button {
+      flex: 1 1 132px;
+      padding-inline: 12px;
+      font-weight: 800;
+    }
+
+    .primary {
+      background: #f2c94c;
+      border-color: #f7da7a;
+      color: #1a1606;
+    }
+
+    .primary:hover:not(:disabled) {
+      background: #ffd866;
+      border-color: #ffe493;
+    }
+
+    .stop {
+      background: #3a1d1d;
+      border-color: #703434;
+      color: #ffd9d6;
+    }
+
+    .stop:hover:not(:disabled) {
+      background: #4a2424;
+      border-color: #9b4a43;
+    }
+
+    .capture-area {
+      display: grid;
+      gap: 12px;
+    }
+
+    .preview-wrap {
+      position: relative;
+      min-height: 430px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background:
+        linear-gradient(45deg, rgba(255,255,255,0.025) 25%, transparent 25%),
+        linear-gradient(-45deg, rgba(255,255,255,0.025) 25%, transparent 25%),
+        #0b0e0a;
+      background-size: 24px 24px;
+      overflow: hidden;
+      user-select: none;
+    }
+
+    video {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      background: #050705;
+    }
+
+    .empty-preview {
+      position: absolute;
+      inset: 0;
+      display: grid;
+      place-items: center;
+      padding: 28px;
+      color: var(--muted);
+      text-align: center;
+      pointer-events: none;
+    }
+
+    .crop-box {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      width: 25px;
+      height: 25px;
+      min-width: 8px;
+      min-height: 8px;
+      border: 2px solid var(--accent);
+      background: rgba(242, 201, 76, 0.12);
+      box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.35);
+      transform: translate(-50%, -50%);
+      cursor: move;
+      display: none;
+    }
+
+    .crop-box.visible {
+      display: block;
+    }
+
+    .handle {
+      position: absolute;
+      right: -7px;
+      bottom: -7px;
+      width: 14px;
+      height: 14px;
+      border: 2px solid #10130f;
+      border-radius: 50%;
+      background: var(--accent);
+      cursor: nwse-resize;
+    }
+
+    .preview-tools {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 170px;
+      gap: 12px;
+      align-items: stretch;
+    }
+
+    .thumb-card {
+      display: grid;
+      align-content: start;
+      gap: 9px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: #121710;
+      padding: 12px;
+    }
+
+    .thumb-stage {
+      display: grid;
+      min-height: 150px;
+      place-items: center;
+      border: 1px solid var(--line);
+      border-radius: 7px;
+      background: #050705;
+      overflow: hidden;
+    }
+
+    .thumb-stage canvas {
+      width: min(100%, 150px);
+      height: auto;
+      image-rendering: pixelated;
+    }
+
+    .metric-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .metric {
+      display: grid;
+      gap: 6px;
+      min-height: 96px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: #141914;
+      padding: 12px;
+    }
+
+    .metric span {
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 750;
+    }
+
+    .metric strong {
+      align-self: end;
+      font-size: clamp(22px, 3vw, 38px);
+      line-height: 1;
+      letter-spacing: 0;
+      word-break: break-word;
+    }
+
+    .metric strong.small {
+      font-size: clamp(16px, 2vw, 23px);
+      line-height: 1.15;
+    }
+
+    .log {
+      display: grid;
+      gap: 8px;
+      max-height: 250px;
+      overflow: auto;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: #0f130e;
+      padding: 10px;
+    }
+
+    .log-entry {
+      display: grid;
+      grid-template-columns: 84px minmax(0, 1fr);
+      gap: 10px;
+      color: var(--soft);
+      font-size: 13px;
+      line-height: 1.45;
+    }
+
+    .log-entry time {
+      color: var(--muted);
+      font-variant-numeric: tabular-nums;
+    }
+
+    .inline-check {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 650;
+    }
+
+    .inline-check input {
+      width: 17px;
+      height: 17px;
+      min-height: 17px;
+      accent-color: var(--accent);
+    }
+
+    .note {
+      border: 1px solid rgba(242, 201, 76, 0.22);
+      border-radius: var(--radius);
+      background: rgba(242, 201, 76, 0.08);
+      color: #f4e9bd;
+      padding: 11px 12px;
+      font-size: 13px;
+      line-height: 1.5;
+    }
+
+    .hidden {
+      display: none !important;
+    }
+
+    @media (max-width: 1060px) {
+      .layout {
+        grid-template-columns: 1fr;
+      }
+
+      .preview-wrap {
+        min-height: 360px;
+      }
+    }
+
+    @media (max-width: 720px) {
+      .shell {
+        padding: 14px;
+      }
+
+      .topbar {
+        align-items: flex-start;
+        flex-direction: column;
+      }
+
+      .grid-2,
+      .grid-3,
+      .metric-grid,
+      .preview-tools {
+        grid-template-columns: 1fr;
+      }
+
+      .preview-wrap {
+        min-height: 280px;
+      }
+
+      .log-entry {
+        grid-template-columns: 1fr;
+        gap: 2px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="shell">
+    <header class="topbar">
+      <div class="brand">
+        <div class="brand-mark">CD</div>
+        <div>
+          <h1>쿨타임 알림</h1>
+          <p class="subtle">지정한 화면 영역의 노란 숫자를 읽고, 보정된 시간 뒤에 chicken.mp3를 재생합니다.</p>
+        </div>
+      </div>
+      <div id="statusPill" class="status-pill">
+        <span class="status-dot"></span>
+        <span id="statusText">대기 중</span>
+      </div>
+    </header>
+
+    <section class="layout">
+      <aside class="panel">
+        <div class="panel-header">
+          <div class="panel-title">
+            <h2>AI 설정</h2>
+            <p class="subtle">Vertex AI 또는 Google AI Studio 중 하나를 선택</p>
+          </div>
+        </div>
+        <div class="panel-body">
+          <div class="segmented" role="tablist" aria-label="AI provider">
+            <button id="providerVertex" class="active" type="button" role="tab" aria-selected="true">Vertex AI</button>
+            <button id="providerStudio" type="button" role="tab" aria-selected="false">AI Studio</button>
+          </div>
+
+          <div id="vertexPanel" class="provider-panel active">
+            <div class="grid-2">
+              <label>
+                Project ID
+                <input id="vertexProjectId" autocomplete="off" placeholder="my-gcp-project">
+              </label>
+              <label>
+                Location
+                <input id="vertexLocation" autocomplete="off" value="us-central1" placeholder="us-central1">
+              </label>
+            </div>
+            <label>
+              Client Email
+              <input id="vertexClientEmail" autocomplete="off" placeholder="service-account@project.iam.gserviceaccount.com">
+            </label>
+            <label>
+              Model ID
+              <input id="vertexModelId" autocomplete="off" value="gemini-2.5-flash" placeholder="gemini-2.5-flash">
+            </label>
+            <label>
+              Private Key
+              <textarea id="vertexPrivateKey" spellcheck="false" autocomplete="off" placeholder="-----BEGIN PRIVATE KEY-----&#10;...&#10;-----END PRIVATE KEY-----"></textarea>
+            </label>
+            <div class="button-row">
+              <button id="loadServiceJson" type="button">서비스 계정 JSON 불러오기</button>
+              <input id="serviceJsonFile" class="hidden" type="file" accept=".json,application/json">
+            </div>
+          </div>
+
+          <div id="studioPanel" class="provider-panel">
+            <label>
+              Google AI Studio API Key
+              <input id="studioApiKey" type="password" autocomplete="off" placeholder="AIza...">
+            </label>
+            <label>
+              Model ID
+              <input id="studioModelId" autocomplete="off" value="gemini-2.5-flash" placeholder="gemini-2.5-flash">
+            </label>
+          </div>
+
+          <label class="inline-check">
+            <input id="saveSettings" type="checkbox">
+            이 브라우저에 설정 저장
+          </label>
+          <div class="button-row">
+            <button id="saveSettingsNow" type="button">설정 저장</button>
+            <button id="clearSettings" type="button">저장값 삭제</button>
+          </div>
+          <p class="note">AI 요청은 Vercel의 /api/gemini 서버리스 함수로 전달됩니다. 공용 배포 URL을 여러 사람이 함께 쓰는 경우 키 저장 옵션은 꺼두는 편이 좋습니다.</p>
+        </div>
+      </aside>
+
+      <section class="panel">
+        <div class="panel-header">
+          <div class="panel-title">
+            <h2>메인</h2>
+            <p class="subtle">화면 선택 후 크롭 박스를 노란 숫자 위에 맞추세요.</p>
+          </div>
+        </div>
+
+        <div class="panel-body">
+          <div class="grid-3">
+            <label>
+              알림 지연(초)
+              <input id="notifyOffsetSec" type="number" min="-60" step="0.1" value="0">
+            </label>
+            <label>
+              재인식 대기(초)
+              <input id="repeatAfterSec" type="number" min="0" step="0.1" value="3">
+            </label>
+            <label>
+              볼륨
+              <input id="alarmVolume" type="number" min="0" max="1" step="0.05" value="1">
+            </label>
+          </div>
+
+          <div class="button-row">
+            <button id="selectScreen" type="button">화면 선택</button>
+            <button id="singleRead" type="button">1회 인식</button>
+            <button id="startBtn" class="primary" type="button">시작</button>
+            <button id="stopBtn" class="stop" type="button" disabled>종료</button>
+            <button id="testSound" type="button">소리 테스트</button>
+          </div>
+
+          <div class="capture-area">
+            <div id="previewWrap" class="preview-wrap">
+              <video id="sourceVideo" autoplay playsinline muted></video>
+              <div id="emptyPreview" class="empty-preview">화면 선택을 누르면 선택한 창이나 탭이 여기에 표시됩니다.</div>
+              <div id="cropBox" class="crop-box" aria-label="capture region">
+                <div class="handle" data-handle="resize"></div>
+              </div>
+            </div>
+
+            <div class="preview-tools">
+              <div class="grid-3">
+                <label>
+                  X
+                  <input id="cropX" type="number" min="0" step="1" value="0">
+                </label>
+                <label>
+                  Y
+                  <input id="cropY" type="number" min="0" step="1" value="0">
+                </label>
+                <label>
+                  크기(px)
+                  <input id="cropSize" type="number" min="8" step="1" value="25">
+                </label>
+              </div>
+              <div class="thumb-card">
+                <p class="subtle">최근 캡처</p>
+                <div class="thumb-stage">
+                  <canvas id="captureCanvas" width="25" height="25"></canvas>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="metric-grid">
+            <div class="metric">
+              <span>AI 응답</span>
+              <strong id="aiAnswer">-</strong>
+            </div>
+            <div class="metric">
+              <span>응답 지연</span>
+              <strong id="latencyText">-</strong>
+            </div>
+            <div class="metric">
+              <span>보정 쿨타임</span>
+              <strong id="cooldownText">-</strong>
+            </div>
+            <div class="metric">
+              <span>재생까지</span>
+              <strong id="remainingText">-</strong>
+            </div>
+          </div>
+
+          <div id="log" class="log" aria-live="polite"></div>
+        </div>
+      </section>
+    </section>
+  </main>
+
+  <audio id="alarmAudio" src="chicken.mp3" preload="auto"></audio>
+
+  <script>
+    const $ = (id) => document.getElementById(id);
+
+    const els = {
+      statusPill: $("statusPill"),
+      statusText: $("statusText"),
+      providerVertex: $("providerVertex"),
+      providerStudio: $("providerStudio"),
+      vertexPanel: $("vertexPanel"),
+      studioPanel: $("studioPanel"),
+      vertexProjectId: $("vertexProjectId"),
+      vertexLocation: $("vertexLocation"),
+      vertexClientEmail: $("vertexClientEmail"),
+      vertexModelId: $("vertexModelId"),
+      vertexPrivateKey: $("vertexPrivateKey"),
+      studioApiKey: $("studioApiKey"),
+      studioModelId: $("studioModelId"),
+      saveSettings: $("saveSettings"),
+      saveSettingsNow: $("saveSettingsNow"),
+      clearSettings: $("clearSettings"),
+      loadServiceJson: $("loadServiceJson"),
+      serviceJsonFile: $("serviceJsonFile"),
+      notifyOffsetSec: $("notifyOffsetSec"),
+      repeatAfterSec: $("repeatAfterSec"),
+      alarmVolume: $("alarmVolume"),
+      selectScreen: $("selectScreen"),
+      singleRead: $("singleRead"),
+      startBtn: $("startBtn"),
+      stopBtn: $("stopBtn"),
+      testSound: $("testSound"),
+      previewWrap: $("previewWrap"),
+      sourceVideo: $("sourceVideo"),
+      emptyPreview: $("emptyPreview"),
+      cropBox: $("cropBox"),
+      cropX: $("cropX"),
+      cropY: $("cropY"),
+      cropSize: $("cropSize"),
+      captureCanvas: $("captureCanvas"),
+      aiAnswer: $("aiAnswer"),
+      latencyText: $("latencyText"),
+      cooldownText: $("cooldownText"),
+      remainingText: $("remainingText"),
+      log: $("log"),
+      alarmAudio: $("alarmAudio")
+    };
+
+    const STORAGE_KEY = "cooldown-reminder-settings-v1";
+    const OCR_PROMPT = [
+      "이미지 안에 노란색 글씨로 표시된 쿨타임 숫자만 읽어주세요.",
+      "다른 텍스트, 단위, 설명 없이 숫자만 답하세요.",
+      "숫자가 보이지 않으면 NONE만 답하세요."
+    ].join(" ");
+
+    const state = {
+      provider: "vertex",
+      stream: null,
+      running: false,
+      activeRunId: 0,
+      timerId: null,
+      tickerId: null,
+      nextPlayAt: null,
+      crop: { x: 0, y: 0, size: 25 },
+      videoBox: null,
+      drag: null
+    };
+
+    function nowLabel() {
+      return new Intl.DateTimeFormat("ko-KR", {
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit",
+        hour12: false
+      }).format(new Date());
+    }
+
+    function log(message) {
+      const entry = document.createElement("div");
+      entry.className = "log-entry";
+      entry.innerHTML = `<time>${nowLabel()}</time><div>${escapeHtml(message)}</div>`;
+      els.log.prepend(entry);
+      while (els.log.children.length > 80) {
+        els.log.lastElementChild.remove();
+      }
+    }
+
+    function escapeHtml(value) {
+      return String(value)
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+    }
+
+    function setStatus(text, mode = "") {
+      els.statusText.textContent = text;
+      els.statusPill.className = `status-pill ${mode}`.trim();
+    }
+
+    function formatSeconds(value) {
+      if (!Number.isFinite(value)) return "-";
+      const sign = value < 0 ? "-" : "";
+      const abs = Math.max(0, Math.abs(value));
+      const minutes = Math.floor(abs / 60);
+      const seconds = Math.floor(abs % 60);
+      const tenths = Math.floor((abs - Math.floor(abs)) * 10);
+      if (minutes > 0) {
+        return `${sign}${minutes}:${String(seconds).padStart(2, "0")}`;
+      }
+      return `${sign}${seconds}.${tenths}s`;
+    }
+
+    function readNumber(input, fallback = 0) {
+      const value = Number.parseFloat(input.value);
+      return Number.isFinite(value) ? value : fallback;
+    }
+
+    function switchProvider(provider) {
+      state.provider = provider;
+      const isVertex = provider === "vertex";
+      els.providerVertex.classList.toggle("active", isVertex);
+      els.providerStudio.classList.toggle("active", !isVertex);
+      els.providerVertex.setAttribute("aria-selected", String(isVertex));
+      els.providerStudio.setAttribute("aria-selected", String(!isVertex));
+      els.vertexPanel.classList.toggle("active", isVertex);
+      els.studioPanel.classList.toggle("active", !isVertex);
+      persistSettingsIfEnabled();
+    }
+
+    function getSettings() {
+      return {
+        provider: state.provider,
+        vertex: {
+          projectId: els.vertexProjectId.value.trim(),
+          location: els.vertexLocation.value.trim() || "us-central1",
+          clientEmail: els.vertexClientEmail.value.trim(),
+          modelId: els.vertexModelId.value.trim() || "gemini-2.5-flash",
+          privateKey: els.vertexPrivateKey.value.trim()
+        },
+        studio: {
+          apiKey: els.studioApiKey.value.trim(),
+          modelId: els.studioModelId.value.trim() || "gemini-2.5-flash"
+        },
+        capture: {
+          notifyOffsetSec: readNumber(els.notifyOffsetSec, 0),
+          repeatAfterSec: readNumber(els.repeatAfterSec, 3),
+          alarmVolume: Math.min(1, Math.max(0, readNumber(els.alarmVolume, 1))),
+          crop: { ...state.crop }
+        },
+        saveSettings: els.saveSettings.checked
+      };
+    }
+
+    function applySettings(settings) {
+      if (!settings) return;
+      switchProvider(settings.provider === "studio" ? "studio" : "vertex");
+      if (settings.vertex) {
+        els.vertexProjectId.value = settings.vertex.projectId || "";
+        els.vertexLocation.value = settings.vertex.location || "us-central1";
+        els.vertexClientEmail.value = settings.vertex.clientEmail || "";
+        els.vertexModelId.value = settings.vertex.modelId || "gemini-2.5-flash";
+        els.vertexPrivateKey.value = settings.vertex.privateKey || "";
+      }
+      if (settings.studio) {
+        els.studioApiKey.value = settings.studio.apiKey || "";
+        els.studioModelId.value = settings.studio.modelId || "gemini-2.5-flash";
+      }
+      if (settings.capture) {
+        els.notifyOffsetSec.value = settings.capture.notifyOffsetSec ?? 0;
+        els.repeatAfterSec.value = settings.capture.repeatAfterSec ?? 3;
+        els.alarmVolume.value = settings.capture.alarmVolume ?? 1;
+        if (settings.capture.crop) {
+          state.crop = {
+            x: Number(settings.capture.crop.x) || 0,
+            y: Number(settings.capture.crop.y) || 0,
+            size: Math.max(8, Number(settings.capture.crop.size) || 25)
+          };
+        }
+      }
+      els.saveSettings.checked = Boolean(settings.saveSettings);
+      syncCropInputs();
+      renderCropBox();
+    }
+
+    function loadSettings() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (raw) {
+          applySettings(JSON.parse(raw));
+          log("저장된 설정을 불러왔습니다.");
+        } else {
+          syncCropInputs();
+        }
+      } catch (error) {
+        log(`설정 불러오기 실패: ${error.message}`);
+      }
+    }
+
+    function saveSettings() {
+      const settings = getSettings();
+      settings.saveSettings = true;
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(settings));
+      els.saveSettings.checked = true;
+      log("설정을 저장했습니다.");
+    }
+
+    function persistSettingsIfEnabled() {
+      if (!els.saveSettings.checked) return;
+      const settings = getSettings();
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(settings));
+    }
+
+    function clearSavedSettings() {
+      localStorage.removeItem(STORAGE_KEY);
+      els.saveSettings.checked = false;
+      log("저장된 설정을 삭제했습니다.");
+    }
+
+    async function loadServiceAccountFile(file) {
+      const data = JSON.parse(await file.text());
+      els.vertexProjectId.value = data.project_id || els.vertexProjectId.value;
+      els.vertexClientEmail.value = data.client_email || els.vertexClientEmail.value;
+      els.vertexPrivateKey.value = data.private_key || els.vertexPrivateKey.value;
+      persistSettingsIfEnabled();
+      log("서비스 계정 JSON을 읽었습니다.");
+    }
+
+    function getVideoContentBox() {
+      const wrapRect = els.previewWrap.getBoundingClientRect();
+      const videoWidth = els.sourceVideo.videoWidth || 16;
+      const videoHeight = els.sourceVideo.videoHeight || 9;
+      const wrapRatio = wrapRect.width / wrapRect.height;
+      const videoRatio = videoWidth / videoHeight;
+      let width = wrapRect.width;
+      let height = wrapRect.height;
+      let left = 0;
+      let top = 0;
+      if (wrapRatio > videoRatio) {
+        width = wrapRect.height * videoRatio;
+        left = (wrapRect.width - width) / 2;
+      } else {
+        height = wrapRect.width / videoRatio;
+        top = (wrapRect.height - height) / 2;
+      }
+      return { left, top, width, height, videoWidth, videoHeight };
+    }
+
+    function syncCropInputs() {
+      els.cropX.value = Math.round(state.crop.x);
+      els.cropY.value = Math.round(state.crop.y);
+      els.cropSize.value = Math.round(state.crop.size);
+    }
+
+    function clampCrop() {
+      const videoWidth = els.sourceVideo.videoWidth || Math.max(25, state.crop.size);
+      const videoHeight = els.sourceVideo.videoHeight || Math.max(25, state.crop.size);
+      state.crop.size = Math.max(8, Math.min(state.crop.size, videoWidth, videoHeight));
+      state.crop.x = Math.max(0, Math.min(state.crop.x, videoWidth - state.crop.size));
+      state.crop.y = Math.max(0, Math.min(state.crop.y, videoHeight - state.crop.size));
+    }
+
+    function renderCropBox() {
+      if (!els.sourceVideo.videoWidth) return;
+      clampCrop();
+      const box = getVideoContentBox();
+      const left = box.left + (state.crop.x / box.videoWidth) * box.width;
+      const top = box.top + (state.crop.y / box.videoHeight) * box.height;
+      const size = (state.crop.size / box.videoWidth) * box.width;
+      els.cropBox.style.transform = "none";
+      els.cropBox.style.left = `${left}px`;
+      els.cropBox.style.top = `${top}px`;
+      els.cropBox.style.width = `${Math.max(8, size)}px`;
+      els.cropBox.style.height = `${Math.max(8, size)}px`;
+      els.cropBox.classList.add("visible");
+      syncCropInputs();
+      persistSettingsIfEnabled();
+    }
+
+    function pointToVideoCoords(clientX, clientY) {
+      const wrapRect = els.previewWrap.getBoundingClientRect();
+      const box = getVideoContentBox();
+      const localX = clientX - wrapRect.left - box.left;
+      const localY = clientY - wrapRect.top - box.top;
+      return {
+        x: (localX / box.width) * box.videoWidth,
+        y: (localY / box.height) * box.videoHeight
+      };
+    }
+
+    function updateCropFromInputs() {
+      state.crop.x = Math.max(0, readNumber(els.cropX, 0));
+      state.crop.y = Math.max(0, readNumber(els.cropY, 0));
+      state.crop.size = Math.max(8, readNumber(els.cropSize, 25));
+      renderCropBox();
+    }
+
+    async function selectScreen() {
+      if (!navigator.mediaDevices?.getDisplayMedia) {
+        throw new Error("이 브라우저는 화면 캡처 API를 지원하지 않습니다.");
+      }
+
+      stopStreamOnly();
+      const stream = await navigator.mediaDevices.getDisplayMedia({
+        video: {
+          cursor: "never",
+          displaySurface: "window"
+        },
+        audio: false
+      });
+
+      state.stream = stream;
+      els.sourceVideo.srcObject = stream;
+      els.emptyPreview.classList.add("hidden");
+      await waitForVideoReady();
+      clampCrop();
+      if (state.crop.x === 0 && state.crop.y === 0) {
+        state.crop.x = Math.max(0, Math.round((els.sourceVideo.videoWidth - state.crop.size) / 2));
+        state.crop.y = Math.max(0, Math.round((els.sourceVideo.videoHeight - state.crop.size) / 2));
+      }
+      renderCropBox();
+      stream.getVideoTracks()[0].addEventListener("ended", () => {
+        if (state.stream === stream) {
+          stopAll("화면 공유가 종료되었습니다.");
+        }
+      });
+      log(`화면 선택 완료: ${els.sourceVideo.videoWidth}x${els.sourceVideo.videoHeight}`);
+    }
+
+    function waitForVideoReady() {
+      if (els.sourceVideo.videoWidth && els.sourceVideo.readyState >= 2) {
+        return Promise.resolve();
+      }
+      return new Promise((resolve) => {
+        const done = () => {
+          els.sourceVideo.removeEventListener("loadedmetadata", done);
+          els.sourceVideo.removeEventListener("playing", done);
+          resolve();
+        };
+        els.sourceVideo.addEventListener("loadedmetadata", done, { once: true });
+        els.sourceVideo.addEventListener("playing", done, { once: true });
+      });
+    }
+
+    function captureRegion() {
+      if (!state.stream || !els.sourceVideo.videoWidth) {
+        throw new Error("먼저 화면을 선택하세요.");
+      }
+      clampCrop();
+      const size = Math.max(8, Math.round(state.crop.size));
+      const canvas = els.captureCanvas;
+      canvas.width = size;
+      canvas.height = size;
+      const ctx = canvas.getContext("2d", { willReadFrequently: true });
+      ctx.imageSmoothingEnabled = false;
+      ctx.clearRect(0, 0, size, size);
+      ctx.drawImage(
+        els.sourceVideo,
+        Math.round(state.crop.x),
+        Math.round(state.crop.y),
+        size,
+        size,
+        0,
+        0,
+        size,
+        size
+      );
+      return canvas.toDataURL("image/png").split(",")[1];
+    }
+
+    function validateSettings() {
+      const settings = getSettings();
+      if (settings.provider === "studio") {
+        if (!settings.studio.apiKey) throw new Error("Google AI Studio API Key가 필요합니다.");
+        if (!settings.studio.modelId) throw new Error("AI Studio Model ID가 필요합니다.");
+      } else {
+        if (!settings.vertex.projectId) throw new Error("Vertex AI Project ID가 필요합니다.");
+        if (!settings.vertex.clientEmail) throw new Error("Vertex AI Client Email이 필요합니다.");
+        if (!settings.vertex.privateKey) throw new Error("Vertex AI Private Key가 필요합니다.");
+        if (!settings.vertex.modelId) throw new Error("Vertex AI Model ID가 필요합니다.");
+      }
+      return settings;
+    }
+
+    async function recognizeCooldown() {
+      const settings = validateSettings();
+      const imageBase64 = captureRegion();
+      setStatus("AI 인식 중", "running");
+      const startedAt = performance.now();
+      const text = await callGeminiApi(settings, imageBase64);
+      const latencySec = (performance.now() - startedAt) / 1000;
+      const parsed = parseCooldownNumber(text);
+      if (parsed === null) {
+        throw new Error(`숫자 인식 실패: ${text || "(빈 응답)"}`);
+      }
+      const adjustedCooldownSec = Math.max(0, parsed - latencySec);
+      const notifyOffsetSec = settings.capture.notifyOffsetSec;
+      const waitUntilSoundSec = Math.max(0, adjustedCooldownSec + notifyOffsetSec);
+
+      els.aiAnswer.textContent = String(parsed);
+      els.latencyText.textContent = formatSeconds(latencySec);
+      els.cooldownText.textContent = formatSeconds(adjustedCooldownSec);
+      els.remainingText.textContent = formatSeconds(waitUntilSoundSec);
+
+      log(`AI=${parsed}, 지연=${latencySec.toFixed(2)}초, 보정=${adjustedCooldownSec.toFixed(2)}초, 알림=${waitUntilSoundSec.toFixed(2)}초 후`);
+      persistSettingsIfEnabled();
+
+      return { parsed, latencySec, adjustedCooldownSec, waitUntilSoundSec };
+    }
+
+    function parseCooldownNumber(text) {
+      const normalized = String(text || "").trim();
+      if (!normalized || /^none$/i.test(normalized)) return null;
+      const match = normalized.match(/-?\d+(?:\.\d+)?/);
+      if (!match) return null;
+      const value = Number.parseFloat(match[0]);
+      return Number.isFinite(value) ? value : null;
+    }
+
+    async function callGeminiApi(settings, imageBase64) {
+      const url = "/api/gemini";
+      const response = await fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          provider: settings.provider,
+          prompt: OCR_PROMPT,
+          imageBase64,
+          vertex: settings.provider === "vertex" ? settings.vertex : undefined,
+          studio: settings.provider === "studio" ? settings.studio : undefined
+        })
+      });
+      const data = await parseJsonResponse(response);
+      if (!data.text) {
+        throw new Error("Gemini 응답에 텍스트가 없습니다.");
+      }
+      return String(data.text).trim();
+    }
+
+    async function parseJsonResponse(response) {
+      const text = await response.text();
+      let data;
+      try {
+        data = text ? JSON.parse(text) : {};
+      } catch (error) {
+        throw new Error(`API 응답을 JSON으로 읽지 못했습니다: ${text.slice(0, 140)}`);
+      }
+      if (!response.ok) {
+        const message = data?.error?.message || response.statusText || "요청 실패";
+        throw new Error(`${response.status} ${message}`);
+      }
+      return data;
+    }
+
+    async function unlockAudio() {
+      els.alarmAudio.volume = Math.min(1, Math.max(0, readNumber(els.alarmVolume, 1)));
+      try {
+        els.alarmAudio.muted = true;
+        await els.alarmAudio.play();
+        els.alarmAudio.pause();
+        els.alarmAudio.currentTime = 0;
+      } catch (_) {
+        // The real alarm play will report a visible log if the browser blocks it.
+      } finally {
+        els.alarmAudio.muted = false;
+      }
+    }
+
+    async function playAlarm() {
+      els.alarmAudio.volume = Math.min(1, Math.max(0, readNumber(els.alarmVolume, 1)));
+      els.alarmAudio.currentTime = 0;
+      await els.alarmAudio.play();
+      log("chicken.mp3를 재생했습니다.");
+    }
+
+    function clearTimers() {
+      if (state.timerId) {
+        clearTimeout(state.timerId);
+        state.timerId = null;
+      }
+      if (state.tickerId) {
+        clearInterval(state.tickerId);
+        state.tickerId = null;
+      }
+      state.nextPlayAt = null;
+    }
+
+    function startTicker() {
+      if (state.tickerId) clearInterval(state.tickerId);
+      state.tickerId = setInterval(() => {
+        if (!state.nextPlayAt) return;
+        const remain = Math.max(0, (state.nextPlayAt - Date.now()) / 1000);
+        els.remainingText.textContent = formatSeconds(remain);
+        if (remain <= 0) {
+          clearInterval(state.tickerId);
+          state.tickerId = null;
+        }
+      }, 200);
+    }
+
+    async function startLoop() {
+      if (state.running) return;
+      if (!state.stream) {
+        await selectScreen();
+      }
+      await unlockAudio();
+      state.running = true;
+      state.activeRunId += 1;
+      els.startBtn.disabled = true;
+      els.stopBtn.disabled = false;
+      els.singleRead.disabled = true;
+      els.selectScreen.disabled = true;
+      setStatus("실행 중", "running");
+      log("반복 인식을 시작했습니다.");
+      void runCycle(state.activeRunId);
+    }
+
+    async function runCycle(runId) {
+      if (!state.running || runId !== state.activeRunId) return;
+      clearTimers();
+      try {
+        const result = await recognizeCooldown();
+        if (!state.running || runId !== state.activeRunId) return;
+        const delayMs = Math.max(0, result.waitUntilSoundSec * 1000);
+        state.nextPlayAt = Date.now() + delayMs;
+        setStatus("알림 대기 중", "waiting");
+        startTicker();
+        state.timerId = setTimeout(async () => {
+          if (!state.running || runId !== state.activeRunId) return;
+          try {
+            await playAlarm();
+          } catch (error) {
+            log(`소리 재생 실패: ${error.message}`);
+          }
+          if (!state.running || runId !== state.activeRunId) return;
+          const repeatDelay = Math.max(0, readNumber(els.repeatAfterSec, 3) * 1000);
+          els.remainingText.textContent = "재인식 대기";
+          setStatus("재인식 대기 중", "waiting");
+          state.timerId = setTimeout(() => {
+            void runCycle(runId);
+          }, repeatDelay);
+        }, delayMs);
+      } catch (error) {
+        log(`오류: ${error.message}`);
+        setStatus("오류 후 대기", "waiting");
+        if (!state.running || runId !== state.activeRunId) return;
+        const retryMs = Math.max(1000, readNumber(els.repeatAfterSec, 3) * 1000);
+        state.timerId = setTimeout(() => {
+          void runCycle(runId);
+        }, retryMs);
+      }
+    }
+
+    async function singleRead() {
+      if (!state.stream) {
+        await selectScreen();
+      }
+      const result = await recognizeCooldown();
+      setStatus("1회 인식 완료", "");
+      log(`1회 인식 완료: ${result.waitUntilSoundSec.toFixed(2)}초 후 알림 값`);
+    }
+
+    function stopStreamOnly() {
+      if (state.stream) {
+        for (const track of state.stream.getTracks()) {
+          track.stop();
+        }
+      }
+      state.stream = null;
+      els.sourceVideo.srcObject = null;
+      els.emptyPreview.classList.remove("hidden");
+      els.cropBox.classList.remove("visible");
+    }
+
+    function stopAll(message = "종료했습니다.") {
+      state.running = false;
+      state.activeRunId += 1;
+      clearTimers();
+      els.startBtn.disabled = false;
+      els.stopBtn.disabled = true;
+      els.singleRead.disabled = false;
+      els.selectScreen.disabled = false;
+      els.alarmAudio.pause();
+      els.alarmAudio.currentTime = 0;
+      stopStreamOnly();
+      setStatus("대기 중", "");
+      log(message);
+    }
+
+    function attachEvents() {
+      els.providerVertex.addEventListener("click", () => switchProvider("vertex"));
+      els.providerStudio.addEventListener("click", () => switchProvider("studio"));
+      els.saveSettingsNow.addEventListener("click", saveSettings);
+      els.clearSettings.addEventListener("click", clearSavedSettings);
+      els.loadServiceJson.addEventListener("click", () => els.serviceJsonFile.click());
+      els.serviceJsonFile.addEventListener("change", async () => {
+        const file = els.serviceJsonFile.files?.[0];
+        if (!file) return;
+        try {
+          await loadServiceAccountFile(file);
+        } catch (error) {
+          log(`서비스 계정 JSON 읽기 실패: ${error.message}`);
+        } finally {
+          els.serviceJsonFile.value = "";
+        }
+      });
+
+      const persistTargets = [
+        els.vertexProjectId,
+        els.vertexLocation,
+        els.vertexClientEmail,
+        els.vertexModelId,
+        els.vertexPrivateKey,
+        els.studioApiKey,
+        els.studioModelId,
+        els.notifyOffsetSec,
+        els.repeatAfterSec,
+        els.alarmVolume
+      ];
+      for (const input of persistTargets) {
+        input.addEventListener("input", persistSettingsIfEnabled);
+      }
+      els.saveSettings.addEventListener("change", () => {
+        if (els.saveSettings.checked) {
+          saveSettings();
+        } else {
+          clearSavedSettings();
+        }
+      });
+
+      els.selectScreen.addEventListener("click", async () => {
+        try {
+          await selectScreen();
+        } catch (error) {
+          log(`화면 선택 실패: ${error.message}`);
+        }
+      });
+      els.singleRead.addEventListener("click", async () => {
+        try {
+          await singleRead();
+        } catch (error) {
+          log(`1회 인식 실패: ${error.message}`);
+          setStatus("대기 중", "");
+        }
+      });
+      els.startBtn.addEventListener("click", async () => {
+        try {
+          await startLoop();
+        } catch (error) {
+          stopAll(`시작 실패: ${error.message}`);
+        }
+      });
+      els.stopBtn.addEventListener("click", () => stopAll("사용자가 종료했습니다."));
+      els.testSound.addEventListener("click", async () => {
+        try {
+          await playAlarm();
+        } catch (error) {
+          log(`소리 테스트 실패: ${error.message}`);
+        }
+      });
+
+      for (const input of [els.cropX, els.cropY, els.cropSize]) {
+        input.addEventListener("input", updateCropFromInputs);
+      }
+
+      els.sourceVideo.addEventListener("loadedmetadata", renderCropBox);
+      window.addEventListener("resize", renderCropBox);
+
+      els.cropBox.addEventListener("pointerdown", (event) => {
+        event.preventDefault();
+        const mode = event.target?.dataset?.handle === "resize" ? "resize" : "move";
+        const point = pointToVideoCoords(event.clientX, event.clientY);
+        state.drag = {
+          mode,
+          startX: point.x,
+          startY: point.y,
+          crop: { ...state.crop }
+        };
+        els.cropBox.setPointerCapture(event.pointerId);
+      });
+
+      els.cropBox.addEventListener("pointermove", (event) => {
+        if (!state.drag) return;
+        const point = pointToVideoCoords(event.clientX, event.clientY);
+        const dx = point.x - state.drag.startX;
+        const dy = point.y - state.drag.startY;
+        if (state.drag.mode === "move") {
+          state.crop.x = state.drag.crop.x + dx;
+          state.crop.y = state.drag.crop.y + dy;
+        } else {
+          const delta = Math.max(dx, dy);
+          state.crop.size = state.drag.crop.size + delta;
+        }
+        renderCropBox();
+      });
+
+      els.cropBox.addEventListener("pointerup", () => {
+        state.drag = null;
+      });
+      els.cropBox.addEventListener("pointercancel", () => {
+        state.drag = null;
+      });
+    }
+
+    attachEvents();
+    loadSettings();
+    setStatus("대기 중", "");
+    log("준비되었습니다. chicken.mp3는 index.html과 같은 폴더에 두면 됩니다.");
+  </script>
+</body>
+</html>

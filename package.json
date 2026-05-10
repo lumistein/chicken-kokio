@@ -1,0 +1,13 @@
+{
+  "name": "cooldown-sound-reminder",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Vercel-hosted cooldown sound reminder using Gemini vision.",
+  "scripts": {
+    "dev": "vercel dev",
+    "start": "vercel dev"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
