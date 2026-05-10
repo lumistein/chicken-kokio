@@ -1,6 +1,7 @@
 const crypto = require("crypto");
 
 const GOOGLE_SCOPE = "https://www.googleapis.com/auth/cloud-platform";
+const GOOGLE_TIMEOUT_MS = 25_000;
 const DEFAULT_PROMPT = [
   "이미지 안에 노란색 글씨로 표시된 쿨타임 숫자만 읽어주세요.",
   "다른 텍스트, 단위, 설명 없이 숫자만 답하세요.",
@@ -36,7 +37,11 @@ module.exports = async function handler(req, res) {
     return sendJson(res, 200, { text });
   } catch (error) {
     const status = Number.isInteger(error.status) ? error.status : 500;
-    return sendJson(res, status, { error: error.message || "서버 오류가 발생했습니다." });
+    return sendJson(res, status, {
+      error: error.message || "서버 오류가 발생했습니다.",
+      source: error.source || "server",
+      upstreamStatus: error.upstreamStatus
+    });
   }
 };
 
@@ -76,7 +81,7 @@ async function callAIStudio(config, imageBase64, prompt) {
   const apiKey = requireString(config.apiKey, "Google AI Studio API Key가 필요합니다.");
   const modelId = encodeURIComponent(config.modelId || "gemini-2.5-flash");
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelId}:generateContent?key=${encodeURIComponent(apiKey)}`;
-  const response = await fetch(url, {
+  const response = await fetchWithTimeout(url, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
@@ -96,9 +101,9 @@ async function callAIStudio(config, imageBase64, prompt) {
         maxOutputTokens: 8
       }
     })
-  });
+  }, "Google AI Studio generateContent");
 
-  return extractGeminiText(await parseGoogleResponse(response));
+  return extractGeminiText(await parseGoogleResponse(response, "Google AI Studio"));
 }
 
 async function callVertexAI(config, imageBase64, prompt) {
@@ -110,7 +115,7 @@ async function callVertexAI(config, imageBase64, prompt) {
   const token = await getVertexAccessToken({ clientEmail, privateKey });
   const url = `https://${encodeURIComponent(location)}-aiplatform.googleapis.com/v1/projects/${encodeURIComponent(projectId)}/locations/${encodeURIComponent(location)}/publishers/google/models/${encodeURIComponent(modelId)}:generateContent`;
 
-  const response = await fetch(url, {
+  const response = await fetchWithTimeout(url, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -134,9 +139,9 @@ async function callVertexAI(config, imageBase64, prompt) {
         maxOutputTokens: 8
       }
     })
-  });
+  }, "Vertex AI generateContent");
 
-  return extractGeminiText(await parseGoogleResponse(response));
+  return extractGeminiText(await parseGoogleResponse(response, "Vertex AI"));
 }
 
 function requireString(value, message) {
@@ -161,12 +166,12 @@ async function getVertexAccessToken(config) {
   form.set("grant_type", "urn:ietf:params:oauth:grant-type:jwt-bearer");
   form.set("assertion", jwt);
 
-  const response = await fetch("https://oauth2.googleapis.com/token", {
+  const response = await fetchWithTimeout("https://oauth2.googleapis.com/token", {
     method: "POST",
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
     body: form
-  });
-  const data = await parseGoogleResponse(response);
+  }, "Google OAuth token");
+  const data = await parseGoogleResponse(response, "Google OAuth");
 
   if (!data.access_token) {
     throw new Error("OAuth access_token을 받지 못했습니다.");
@@ -212,20 +217,43 @@ function base64Url(buffer) {
     .replace(/=+$/g, "");
 }
 
-async function parseGoogleResponse(response) {
+async function fetchWithTimeout(url, options, label) {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), GOOGLE_TIMEOUT_MS);
+  try {
+    return await fetch(url, { ...options, signal: controller.signal });
+  } catch (error) {
+    if (error.name === "AbortError") {
+      const timeoutError = new Error(`${label} 요청이 ${Math.round(GOOGLE_TIMEOUT_MS / 1000)}초 안에 끝나지 않았습니다.`);
+      timeoutError.status = 504;
+      timeoutError.source = "timeout";
+      throw timeoutError;
+    }
+    error.source = error.source || "network";
+    throw error;
+  } finally {
+    clearTimeout(timeoutId);
+  }
+}
+
+async function parseGoogleResponse(response, label) {
   const text = await response.text();
   let data;
   try {
     data = text ? JSON.parse(text) : {};
   } catch (_) {
-    const error = new Error(`Google API 응답을 JSON으로 읽지 못했습니다: ${text.slice(0, 180)}`);
+    const error = new Error(`${label} 응답을 JSON으로 읽지 못했습니다: ${text.slice(0, 180)}`);
     error.status = response.ok ? 500 : response.status;
+    error.source = "google";
+    error.upstreamStatus = response.status;
     throw error;
   }
 
   if (!response.ok) {
-    const error = new Error(data?.error?.message || response.statusText || "Google API 요청 실패");
+    const error = new Error(data?.error?.message || response.statusText || `${label} 요청 실패`);
     error.status = response.status;
+    error.source = "google";
+    error.upstreamStatus = response.status;
     throw error;
   }
 
