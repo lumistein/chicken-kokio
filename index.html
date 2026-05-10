@@ -1248,8 +1248,11 @@
         throw new Error(`API 응답을 JSON으로 읽지 못했습니다: ${text.slice(0, 140)}`);
       }
       if (!response.ok) {
-        const message = data?.error?.message || response.statusText || "요청 실패";
-        throw new Error(`${response.status} ${message}`);
+        const message = typeof data?.error === "string"
+          ? data.error
+          : data?.error?.message || data?.message || response.statusText || "요청 실패";
+        const source = data?.source ? `[${data.source}] ` : "";
+        throw new Error(`${response.status} ${source}${message}`);
       }
       return data;
     }
