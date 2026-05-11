@@ -655,6 +655,14 @@
         <div class="panel-body">
           <div class="grid-3">
             <label>
+              자동 세팅
+              <select id="cooldownPreset">
+                <option value="custom">사용자 지정</option>
+                <option value="janus30">야누스 30</option>
+                <option value="janus30Under">야누스 30 미만</option>
+              </select>
+            </label>
+            <label>
               알림 지연(초)
               <input id="notifyOffsetSec" type="number" min="-60" step="0.1" value="0">
             </label>
@@ -777,6 +785,7 @@
       clearSettings: $("clearSettings"),
       loadServiceJson: $("loadServiceJson"),
       serviceJsonFile: $("serviceJsonFile"),
+      cooldownPreset: $("cooldownPreset"),
       notifyOffsetSec: $("notifyOffsetSec"),
       repeatAfterSec: $("repeatAfterSec"),
       alarmVolume: $("alarmVolume"),
@@ -813,6 +822,18 @@
       "다른 텍스트, 단위, 설명 없이 숫자만 답하세요.",
       "숫자가 보이지 않으면 NONE만 답하세요."
     ].join(" ");
+    const COOLDOWN_PRESETS = {
+      janus30: {
+        label: "야누스 30",
+        notifyOffsetSec: 50,
+        repeatAfterSec: 15
+      },
+      janus30Under: {
+        label: "야누스 30 미만",
+        notifyOffsetSec: 10,
+        repeatAfterSec: 10
+      }
+    };
 
     const state = {
       provider: "vertex",
@@ -909,6 +930,7 @@
           modelId: els.studioModelId.value.trim() || "gemini-2.5-flash"
         },
         capture: {
+          cooldownPreset: els.cooldownPreset.value,
           notifyOffsetSec: readNumber(els.notifyOffsetSec, 0),
           repeatAfterSec: readNumber(els.repeatAfterSec, 3),
           alarmVolume: Math.min(1, Math.max(0, readNumber(els.alarmVolume, 1))),
@@ -934,6 +956,7 @@
         els.studioModelId.value = settings.studio.modelId || "gemini-2.5-flash";
       }
       if (settings.capture) {
+        els.cooldownPreset.value = settings.capture.cooldownPreset || "custom";
         els.notifyOffsetSec.value = settings.capture.notifyOffsetSec ?? 0;
         els.repeatAfterSec.value = settings.capture.repeatAfterSec ?? 3;
         els.alarmVolume.value = settings.capture.alarmVolume ?? 1;
@@ -983,6 +1006,27 @@
       localStorage.removeItem(STORAGE_KEY);
       els.saveSettings.checked = false;
       log("저장된 설정을 삭제했습니다.");
+    }
+
+    function applyCooldownPreset(value) {
+      const preset = COOLDOWN_PRESETS[value];
+      if (!preset) {
+        els.cooldownPreset.value = "custom";
+        persistSettingsIfEnabled();
+        return;
+      }
+      els.notifyOffsetSec.value = preset.notifyOffsetSec;
+      els.repeatAfterSec.value = preset.repeatAfterSec;
+      els.cooldownPreset.value = value;
+      persistSettingsIfEnabled();
+      log(`${preset.label} 자동 세팅을 적용했습니다.`);
+    }
+
+    function markCooldownPresetCustom() {
+      if (els.cooldownPreset.value !== "custom") {
+        els.cooldownPreset.value = "custom";
+      }
+      persistSettingsIfEnabled();
     }
 
     async function loadServiceAccountFile(file) {
@@ -1493,14 +1537,17 @@
         els.vertexPrivateKey,
         els.studioApiKey,
         els.studioModelId,
-        els.notifyOffsetSec,
-        els.repeatAfterSec,
         els.alarmVolume,
         els.fantasiaMinutes
       ];
       for (const input of persistTargets) {
         input.addEventListener("input", persistSettingsIfEnabled);
       }
+      els.cooldownPreset.addEventListener("change", () => {
+        applyCooldownPreset(els.cooldownPreset.value);
+      });
+      els.notifyOffsetSec.addEventListener("input", markCooldownPresetCustom);
+      els.repeatAfterSec.addEventListener("input", markCooldownPresetCustom);
       els.saveSettings.addEventListener("change", () => {
         if (els.saveSettings.checked) {
           saveSettings();
