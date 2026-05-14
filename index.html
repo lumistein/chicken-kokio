@@ -228,7 +228,7 @@
 
     .segmented {
       display: grid;
-      grid-template-columns: 1fr 1fr;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
       gap: 6px;
       border: 1px solid var(--line);
       border-radius: 8px;
@@ -584,13 +584,14 @@
         <div class="panel-header">
           <div class="panel-title">
             <h2>AI 설정</h2>
-            <p class="subtle">Vertex AI 또는 Google AI Studio 중 하나를 선택</p>
+            <p class="subtle">Vertex AI, Google AI Studio, Custom 엔드포인트 중 하나를 선택</p>
           </div>
         </div>
         <div class="panel-body">
           <div class="segmented" role="tablist" aria-label="AI provider">
             <button id="providerVertex" class="active" type="button" role="tab" aria-selected="true">Vertex AI</button>
             <button id="providerStudio" type="button" role="tab" aria-selected="false">AI Studio</button>
+            <button id="providerCustom" type="button" role="tab" aria-selected="false">Custom</button>
           </div>
 
           <div id="vertexPanel" class="provider-panel active">
@@ -630,6 +631,28 @@
             <label>
               Model ID
               <input id="studioModelId" autocomplete="off" value="gemini-2.5-flash" placeholder="gemini-2.5-flash">
+            </label>
+          </div>
+
+          <div id="customPanel" class="provider-panel">
+            <label>
+              Endpoint URL
+              <input id="customUrl" autocomplete="off" placeholder="https://example.com/v1/chat/completions">
+            </label>
+            <label>
+              API Key
+              <input id="customApiKey" type="password" autocomplete="off" placeholder="sk-...">
+            </label>
+            <label>
+              Model ID
+              <input id="customModelId" autocomplete="off" placeholder="your-vision-model">
+            </label>
+            <label>
+              멀티모달 입력 순서
+              <select id="customPartOrder">
+                <option value="imageFirst">이미지 우선 컨텍스트</option>
+                <option value="promptFirst">프롬프트 우선 인스트럭션</option>
+              </select>
             </label>
           </div>
 
@@ -771,8 +794,10 @@
       statusText: $("statusText"),
       providerVertex: $("providerVertex"),
       providerStudio: $("providerStudio"),
+      providerCustom: $("providerCustom"),
       vertexPanel: $("vertexPanel"),
       studioPanel: $("studioPanel"),
+      customPanel: $("customPanel"),
       vertexProjectId: $("vertexProjectId"),
       vertexLocation: $("vertexLocation"),
       vertexClientEmail: $("vertexClientEmail"),
@@ -780,6 +805,10 @@
       vertexPrivateKey: $("vertexPrivateKey"),
       studioApiKey: $("studioApiKey"),
       studioModelId: $("studioModelId"),
+      customUrl: $("customUrl"),
+      customApiKey: $("customApiKey"),
+      customModelId: $("customModelId"),
+      customPartOrder: $("customPartOrder"),
       saveSettings: $("saveSettings"),
       saveSettingsNow: $("saveSettingsNow"),
       clearSettings: $("clearSettings"),
@@ -906,12 +935,17 @@
     function switchProvider(provider) {
       state.provider = provider;
       const isVertex = provider === "vertex";
+      const isStudio = provider === "studio";
+      const isCustom = provider === "custom";
       els.providerVertex.classList.toggle("active", isVertex);
-      els.providerStudio.classList.toggle("active", !isVertex);
+      els.providerStudio.classList.toggle("active", isStudio);
+      els.providerCustom.classList.toggle("active", isCustom);
       els.providerVertex.setAttribute("aria-selected", String(isVertex));
-      els.providerStudio.setAttribute("aria-selected", String(!isVertex));
+      els.providerStudio.setAttribute("aria-selected", String(isStudio));
+      els.providerCustom.setAttribute("aria-selected", String(isCustom));
       els.vertexPanel.classList.toggle("active", isVertex);
-      els.studioPanel.classList.toggle("active", !isVertex);
+      els.studioPanel.classList.toggle("active", isStudio);
+      els.customPanel.classList.toggle("active", isCustom);
       persistSettingsIfEnabled();
     }
 
@@ -929,6 +963,12 @@
           apiKey: els.studioApiKey.value.trim(),
           modelId: els.studioModelId.value.trim() || "gemini-2.5-flash"
         },
+        custom: {
+          url: els.customUrl.value.trim(),
+          apiKey: els.customApiKey.value.trim(),
+          modelId: els.customModelId.value.trim(),
+          partOrder: els.customPartOrder.value || "imageFirst"
+        },
         capture: {
           cooldownPreset: els.cooldownPreset.value,
           notifyOffsetSec: readNumber(els.notifyOffsetSec, 0),
@@ -943,7 +983,8 @@
 
     function applySettings(settings) {
       if (!settings) return;
-      switchProvider(settings.provider === "studio" ? "studio" : "vertex");
+      const provider = ["vertex", "studio", "custom"].includes(settings.provider) ? settings.provider : "vertex";
+      switchProvider(provider);
       if (settings.vertex) {
         els.vertexProjectId.value = settings.vertex.projectId || "";
         els.vertexLocation.value = settings.vertex.location || "us-central1";
@@ -954,6 +995,12 @@
       if (settings.studio) {
         els.studioApiKey.value = settings.studio.apiKey || "";
         els.studioModelId.value = settings.studio.modelId || "gemini-2.5-flash";
+      }
+      if (settings.custom) {
+        els.customUrl.value = settings.custom.url || "";
+        els.customApiKey.value = settings.custom.apiKey || "";
+        els.customModelId.value = settings.custom.modelId || "";
+        els.customPartOrder.value = settings.custom.partOrder || "imageFirst";
       }
       if (settings.capture) {
         els.cooldownPreset.value = settings.capture.cooldownPreset || "custom";
@@ -1185,6 +1232,9 @@
       if (settings.provider === "studio") {
         if (!settings.studio.apiKey) throw new Error("Google AI Studio API Key가 필요합니다.");
         if (!settings.studio.modelId) throw new Error("AI Studio Model ID가 필요합니다.");
+      } else if (settings.provider === "custom") {
+        if (!settings.custom.url) throw new Error("Custom Endpoint URL이 필요합니다.");
+        if (!settings.custom.modelId) throw new Error("Custom Model ID가 필요합니다.");
       } else {
         if (!settings.vertex.projectId) throw new Error("Vertex AI Project ID가 필요합니다.");
         if (!settings.vertex.clientEmail) throw new Error("Vertex AI Client Email이 필요합니다.");
@@ -1273,7 +1323,8 @@
           prompt: OCR_PROMPT,
           imageBase64,
           vertex: settings.provider === "vertex" ? settings.vertex : undefined,
-          studio: settings.provider === "studio" ? settings.studio : undefined
+          studio: settings.provider === "studio" ? settings.studio : undefined,
+          custom: settings.provider === "custom" ? settings.custom : undefined
         })
       });
       const data = await parseJsonResponse(response);
@@ -1514,6 +1565,7 @@
     function attachEvents() {
       els.providerVertex.addEventListener("click", () => switchProvider("vertex"));
       els.providerStudio.addEventListener("click", () => switchProvider("studio"));
+      els.providerCustom.addEventListener("click", () => switchProvider("custom"));
       els.saveSettingsNow.addEventListener("click", saveSettings);
       els.clearSettings.addEventListener("click", clearSavedSettings);
       els.loadServiceJson.addEventListener("click", () => els.serviceJsonFile.click());
@@ -1537,12 +1589,17 @@
         els.vertexPrivateKey,
         els.studioApiKey,
         els.studioModelId,
+        els.customUrl,
+        els.customApiKey,
+        els.customModelId,
+        els.customPartOrder,
         els.alarmVolume,
         els.fantasiaMinutes
       ];
       for (const input of persistTargets) {
         input.addEventListener("input", persistSettingsIfEnabled);
       }
+      els.customPartOrder.addEventListener("change", persistSettingsIfEnabled);
       els.cooldownPreset.addEventListener("change", () => {
         applyCooldownPreset(els.cooldownPreset.value);
       });
