@@ -22,7 +22,7 @@ module.exports = async function handler(req, res) {
 
   try {
     const body = await readJsonBody(req);
-    const provider = body.provider === "studio" ? "studio" : "vertex";
+    const provider = ["vertex", "studio", "custom"].includes(body.provider) ? body.provider : "vertex";
     const prompt = String(body.prompt || DEFAULT_PROMPT);
     const imageBase64 = cleanBase64(body.imageBase64);
 
@@ -30,9 +30,14 @@ module.exports = async function handler(req, res) {
       return sendJson(res, 400, { error: "imageBase64가 필요합니다." });
     }
 
-    const text = provider === "studio"
-      ? await callAIStudio(body.studio || {}, imageBase64, prompt)
-      : await callVertexAI(body.vertex || {}, imageBase64, prompt);
+    let text;
+    if (provider === "studio") {
+      text = await callAIStudio(body.studio || {}, imageBase64, prompt);
+    } else if (provider === "custom") {
+      text = await callCustomModel(body.custom || {}, imageBase64, prompt);
+    } else {
+      text = await callVertexAI(body.vertex || {}, imageBase64, prompt);
+    }
 
     return sendJson(res, 200, { text });
   } catch (error) {
@@ -144,6 +149,46 @@ async function callVertexAI(config, imageBase64, prompt) {
   return extractGeminiText(await parseGoogleResponse(response, "Vertex AI"));
 }
 
+async function callCustomModel(config, imageBase64, prompt) {
+  const endpointUrl = normalizeChatCompletionsUrl(requireString(config.url, "Custom Endpoint URL이 필요합니다."));
+  const modelId = requireString(config.modelId, "Custom Model ID가 필요합니다.");
+  const apiKey = String(config.apiKey || "").trim();
+  const partOrder = config.partOrder === "promptFirst" ? "promptFirst" : "imageFirst";
+  const imagePart = {
+    type: "image_url",
+    image_url: {
+      url: `data:image/png;base64,${imageBase64}`
+    }
+  };
+  const promptPart = {
+    type: "text",
+    text: prompt
+  };
+  const content = partOrder === "promptFirst"
+    ? [promptPart, imagePart]
+    : [imagePart, promptPart];
+  const headers = { "Content-Type": "application/json" };
+  if (apiKey) {
+    headers.Authorization = `Bearer ${apiKey}`;
+  }
+
+  const response = await fetchWithTimeout(endpointUrl, {
+    method: "POST",
+    headers,
+    body: JSON.stringify({
+      model: modelId,
+      messages: [{
+        role: "user",
+        content
+      }],
+      temperature: 0,
+      max_tokens: 8
+    })
+  }, "Custom chat/completions");
+
+  return extractCustomText(await parseUpstreamResponse(response, "Custom model", "custom"));
+}
+
 function requireString(value, message) {
   const text = String(value || "").trim();
   if (!text) {
@@ -152,6 +197,24 @@ function requireString(value, message) {
     throw error;
   }
   return text;
+}
+
+function normalizeChatCompletionsUrl(rawUrl) {
+  let url;
+  try {
+    url = new URL(rawUrl);
+  } catch (_) {
+    const error = new Error("Custom Endpoint URL 형식이 올바르지 않습니다.");
+    error.status = 400;
+    throw error;
+  }
+  const pathname = url.pathname.replace(/\/+$/g, "");
+  if (pathname.endsWith("/chat/completions")) {
+    url.pathname = pathname;
+    return url.toString();
+  }
+  url.pathname = `${pathname}/chat/completions`;
+  return url.toString();
 }
 
 async function getVertexAccessToken(config) {
@@ -237,6 +300,10 @@ async function fetchWithTimeout(url, options, label) {
 }
 
 async function parseGoogleResponse(response, label) {
+  return parseUpstreamResponse(response, label, "google");
+}
+
+async function parseUpstreamResponse(response, label, source) {
   const text = await response.text();
   let data;
   try {
@@ -244,20 +311,27 @@ async function parseGoogleResponse(response, label) {
   } catch (_) {
     const error = new Error(`${label} 응답을 JSON으로 읽지 못했습니다: ${text.slice(0, 180)}`);
     error.status = response.ok ? 500 : response.status;
-    error.source = "google";
+    error.source = source;
     error.upstreamStatus = response.status;
     throw error;
   }
 
   if (!response.ok) {
-    const error = new Error(data?.error?.message || response.statusText || `${label} 요청 실패`);
+    const error = new Error(extractErrorMessage(data) || response.statusText || `${label} 요청 실패`);
     error.status = response.status;
-    error.source = "google";
+    error.source = source;
     error.upstreamStatus = response.status;
     throw error;
   }
 
   return data;
+}
+
+function extractErrorMessage(data) {
+  if (typeof data?.error === "string") return data.error;
+  if (typeof data?.error?.message === "string") return data.error.message;
+  if (typeof data?.message === "string") return data.message;
+  return "";
 }
 
 function extractGeminiText(data) {
@@ -268,4 +342,33 @@ function extractGeminiText(data) {
     throw new Error(`Gemini 응답에 텍스트가 없습니다${reason ? ` (${reason})` : ""}.`);
   }
   return text;
+}
+
+function extractCustomText(data) {
+  if (typeof data?.output_text === "string" && data.output_text.trim()) {
+    return data.output_text.trim();
+  }
+
+  const message = data?.choices?.[0]?.message;
+  if (typeof message?.content === "string" && message.content.trim()) {
+    return message.content.trim();
+  }
+  if (Array.isArray(message?.content)) {
+    const text = message.content
+      .map((part) => part?.text || part?.content || "")
+      .join("")
+      .trim();
+    if (text) return text;
+  }
+
+  const legacyText = data?.choices?.[0]?.text;
+  if (typeof legacyText === "string" && legacyText.trim()) {
+    return legacyText.trim();
+  }
+
+  try {
+    return extractGeminiText(data);
+  } catch (_) {
+    throw new Error("Custom 모델 응답에서 텍스트를 찾지 못했습니다.");
+  }
 }
