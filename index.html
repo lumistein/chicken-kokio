@@ -707,6 +707,11 @@
             <button id="testSound" type="button">소리 테스트</button>
           </div>
 
+          <label class="inline-check">
+            <input id="lowLoadCapture" type="checkbox" checked>
+            저부하 캡처 모드
+          </label>
+
           <div class="timer-panel">
             <div class="grid-2">
               <label>
@@ -828,6 +833,7 @@
       startBtn: $("startBtn"),
       stopBtn: $("stopBtn"),
       testSound: $("testSound"),
+      lowLoadCapture: $("lowLoadCapture"),
       previewWrap: $("previewWrap"),
       sourceVideo: $("sourceVideo"),
       emptyPreview: $("emptyPreview"),
@@ -932,6 +938,10 @@
       return Number.isFinite(value) ? value : fallback;
     }
 
+    function wait(ms) {
+      return new Promise((resolve) => setTimeout(resolve, ms));
+    }
+
     function switchProvider(provider) {
       state.provider = provider;
       const isVertex = provider === "vertex";
@@ -975,6 +985,7 @@
           repeatAfterSec: readNumber(els.repeatAfterSec, 3),
           alarmVolume: Math.min(1, Math.max(0, readNumber(els.alarmVolume, 1))),
           fantasiaMinutes: Math.max(0, readNumber(els.fantasiaMinutes, 10)),
+          lowLoadCapture: els.lowLoadCapture.checked,
           crop: { ...state.crop }
         },
         saveSettings: els.saveSettings.checked
@@ -1008,6 +1019,7 @@
         els.repeatAfterSec.value = settings.capture.repeatAfterSec ?? 3;
         els.alarmVolume.value = settings.capture.alarmVolume ?? 1;
         els.fantasiaMinutes.value = settings.capture.fantasiaMinutes ?? 10;
+        els.lowLoadCapture.checked = settings.capture.lowLoadCapture !== false;
         if (settings.capture.crop) {
           state.crop = {
             x: Number(settings.capture.crop.x) || 0,
@@ -1168,6 +1180,7 @@
         audio: false
       });
 
+      await applyCaptureBudget(stream);
       state.stream = stream;
       els.sourceVideo.srcObject = stream;
       els.emptyPreview.classList.add("hidden");
@@ -1184,6 +1197,43 @@
         }
       });
       log(`화면 선택 완료: ${els.sourceVideo.videoWidth}x${els.sourceVideo.videoHeight}`);
+    }
+
+    async function applyCaptureBudget(stream) {
+      const track = stream.getVideoTracks()[0];
+      if (!track || !els.lowLoadCapture.checked || typeof track.applyConstraints !== "function") {
+        return;
+      }
+      try {
+        await track.applyConstraints({
+          frameRate: {
+            ideal: 1,
+            max: 2
+          }
+        });
+        log("저부하 캡처 모드가 적용되었습니다.");
+      } catch (error) {
+        log(`저부하 캡처 모드 적용 실패: ${error.message}`);
+      }
+    }
+
+    async function wakePreviewForCapture() {
+      if (!els.lowLoadCapture.checked || !state.running || !els.sourceVideo.paused) {
+        return;
+      }
+      try {
+        await els.sourceVideo.play();
+        await wait(250);
+      } catch (error) {
+        log(`프리뷰 재개 실패: ${error.message}`);
+      }
+    }
+
+    function restPreviewAfterCapture() {
+      if (!els.lowLoadCapture.checked || !state.running) {
+        return;
+      }
+      els.sourceVideo.pause();
     }
 
     function waitForVideoReady() {
@@ -1246,7 +1296,9 @@
 
     async function recognizeCooldown() {
       const settings = validateSettings();
+      await wakePreviewForCapture();
       const imageBase64 = captureRegion();
+      restPreviewAfterCapture();
       setStatus("AI 인식 중", "running");
       const startedAt = performance.now();
       let parsed = null;
@@ -1536,13 +1588,28 @@
     }
 
     function stopStreamOnly() {
-      if (state.stream) {
-        for (const track of state.stream.getTracks()) {
-          track.stop();
+      const stream = state.stream;
+      state.stream = null;
+      if (stream) {
+        for (const track of stream.getTracks()) {
+          try {
+            track.enabled = false;
+            track.stop();
+          } catch (_) {
+            // Track cleanup should be best effort during page shutdown.
+          }
         }
       }
-      state.stream = null;
+      els.sourceVideo.pause();
       els.sourceVideo.srcObject = null;
+      els.sourceVideo.removeAttribute("src");
+      try {
+        els.sourceVideo.load();
+      } catch (_) {
+        // Some browsers do not like load() during unload; detaching srcObject is enough there.
+      }
+      const ctx = els.captureCanvas.getContext("2d");
+      ctx.clearRect(0, 0, els.captureCanvas.width, els.captureCanvas.height);
       els.emptyPreview.classList.remove("hidden");
       els.cropBox.classList.remove("visible");
     }
@@ -1560,6 +1627,16 @@
       stopStreamOnly();
       setStatus("대기 중", "");
       log(message);
+    }
+
+    function releasePageResources() {
+      state.running = false;
+      state.activeRunId += 1;
+      clearTimers();
+      clearFantasiaTimer(null);
+      els.alarmAudio.pause();
+      els.fantasiaAudio.pause();
+      stopStreamOnly();
     }
 
     function attachEvents() {
@@ -1594,7 +1671,8 @@
         els.customModelId,
         els.customPartOrder,
         els.alarmVolume,
-        els.fantasiaMinutes
+        els.fantasiaMinutes,
+        els.lowLoadCapture
       ];
       for (const input of persistTargets) {
         input.addEventListener("input", persistSettingsIfEnabled);
@@ -1666,6 +1744,8 @@
 
       els.sourceVideo.addEventListener("loadedmetadata", renderCropBox);
       window.addEventListener("resize", renderCropBox);
+      window.addEventListener("pagehide", releasePageResources);
+      window.addEventListener("beforeunload", releasePageResources);
 
       els.cropBox.addEventListener("pointerdown", (event) => {
         event.preventDefault();
