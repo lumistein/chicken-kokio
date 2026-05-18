@@ -1296,30 +1296,44 @@
 
     async function recognizeCooldown() {
       const settings = validateSettings();
-      await wakePreviewForCapture();
-      const imageBase64 = captureRegion();
-      restPreviewAfterCapture();
-      setStatus("AI 인식 중", "running");
-      const startedAt = performance.now();
       let parsed = null;
       let usedFallback = false;
       let failureMessage = "";
+      const startedAt = performance.now();
 
-      try {
-        const text = await callGeminiApi(settings, imageBase64);
-        parsed = parseCooldownNumber(text);
-        if (parsed === null) {
-          throw new Error(`숫자 인식 실패: ${text || "(빈 응답)"}`);
+      const maxTries = 3;
+      for (let attempt = 1; attempt <= maxTries; attempt++) {
+        try {
+          await wakePreviewForCapture();
+          const imageBase64 = captureRegion();
+          restPreviewAfterCapture();
+          setStatus("AI 인식 중", "running");
+
+          const text = await callGeminiApi(settings, imageBase64);
+          parsed = parseCooldownNumber(text);
+          if (parsed === null) {
+            throw new Error(`숫자 인식 실패: ${text || "(빈 응답)"}`);
+          }
+          if (parsed > 60) {
+            throw new Error(`인식된 숫자(${parsed})가 60초를 초과하여 재인식 시도`);
+          }
+
+          rememberCooldownResponse(parsed);
+          break;
+        } catch (error) {
+          log(`인식 시도 ${attempt}/${maxTries} 실패: ${error.message}`);
+          if (attempt === maxTries) {
+            const average = getCooldownAverage();
+            if (average === null) {
+              throw new Error(`${error.message} (최근 평균값이 아직 없습니다)`);
+            }
+            parsed = average;
+            usedFallback = true;
+            failureMessage = error.message;
+          } else {
+            await wait(500);
+          }
         }
-        rememberCooldownResponse(parsed);
-      } catch (error) {
-        const average = getCooldownAverage();
-        if (average === null) {
-          throw new Error(`${error.message} 최근 평균값이 아직 없습니다.`);
-        }
-        parsed = average;
-        usedFallback = true;
-        failureMessage = error.message;
       }
 
       const latencySec = (performance.now() - startedAt) / 1000;
@@ -1537,9 +1551,24 @@
       els.stopBtn.disabled = false;
       els.singleRead.disabled = true;
       els.selectScreen.disabled = true;
-      setStatus("실행 중", "running");
-      log("반복 인식을 시작했습니다.");
-      void runCycle(state.activeRunId);
+
+      const runId = state.activeRunId;
+      let countdown = 5;
+      log(`${countdown}초 후 반복 인식을 시작합니다...`);
+
+      const nextCountdown = () => {
+        if (!state.running || runId !== state.activeRunId) return;
+        if (countdown > 0) {
+          setStatus(`${countdown}초 후 시작`, "waiting");
+          countdown--;
+          state.timerId = setTimeout(nextCountdown, 1000);
+        } else {
+          setStatus("실행 중", "running");
+          log("반복 인식을 시작했습니다.");
+          void runCycle(runId);
+        }
+      };
+      nextCountdown();
     }
 
     async function runCycle(runId) {
