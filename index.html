@@ -1300,16 +1300,20 @@
       let usedFallback = false;
       let failureMessage = "";
       const startedAt = performance.now();
+      let successfulCaptureStartedAt = startedAt;
+      let rawText = "";
 
       const maxTries = 3;
       for (let attempt = 1; attempt <= maxTries; attempt++) {
         try {
           await wakePreviewForCapture();
+          const captureStartedAt = performance.now();
           const imageBase64 = captureRegion();
           restPreviewAfterCapture();
           setStatus("AI 인식 중", "running");
 
           const text = await callGeminiApi(settings, imageBase64);
+          rawText = text;
           parsed = parseCooldownNumber(text);
           if (parsed === null) {
             throw new Error(`숫자 인식 실패: ${text || "(빈 응답)"}`);
@@ -1319,6 +1323,7 @@
           }
 
           rememberCooldownResponse(parsed);
+          successfulCaptureStartedAt = captureStartedAt;
           break;
         } catch (error) {
           log(`인식 시도 ${attempt}/${maxTries} 실패: ${error.message}`);
@@ -1330,13 +1335,15 @@
             parsed = average;
             usedFallback = true;
             failureMessage = error.message;
+            successfulCaptureStartedAt = startedAt;
           } else {
             await wait(500);
           }
         }
       }
 
-      const latencySec = (performance.now() - startedAt) / 1000;
+      const totalLatencySec = (performance.now() - startedAt) / 1000;
+      const latencySec = (performance.now() - successfulCaptureStartedAt) / 1000;
       const adjustedCooldownSec = Math.max(0, parsed - latencySec);
       const notifyOffsetSec = settings.capture.notifyOffsetSec;
       const waitUntilSoundSec = Math.max(0, adjustedCooldownSec + notifyOffsetSec);
@@ -1349,7 +1356,8 @@
       if (usedFallback) {
         log(`AI 실패(${failureMessage}) → 최근 ${state.cooldownHistory.length}회 평균 ${parsed.toFixed(2)} 적용, 지연=${latencySec.toFixed(2)}초, 알림=${waitUntilSoundSec.toFixed(2)}초 후`);
       } else {
-        log(`AI=${parsed}, 지연=${latencySec.toFixed(2)}초, 보정=${adjustedCooldownSec.toFixed(2)}초, 알림=${waitUntilSoundSec.toFixed(2)}초 후`);
+        const rawSuffix = rawText && String(parsed) !== rawText.trim() ? ` (원본: "${rawText.trim()}")` : "";
+        log(`AI=${parsed}${rawSuffix}, 지연=${latencySec.toFixed(2)}초, 보정=${adjustedCooldownSec.toFixed(2)}초, 알림=${waitUntilSoundSec.toFixed(2)}초 후`);
       }
       persistSettingsIfEnabled();
 
@@ -1359,10 +1367,25 @@
     function parseCooldownNumber(text) {
       const normalized = String(text || "").trim();
       if (!normalized || /^none$/i.test(normalized)) return null;
-      const match = normalized.match(/-?\d+(?:\.\d+)?/);
+      const match = normalized.match(/\d+(?:\.\d+)?/);
       if (!match) return null;
-      const value = Number.parseFloat(match[0]);
-      return Number.isFinite(value) ? value : null;
+      let value = Number.parseFloat(match[0]);
+      if (Number.isFinite(value)) {
+        // AI가 22를 2.2로, 15를 1.5로 잘못 읽는 OCR 오류 자동 보정
+        if (value % 1 !== 0 && value < 10) {
+          const avg = getCooldownAverage();
+          if (avg !== null && avg > 10) {
+            const cleanedStr = match[0].replace(".", "");
+            const correctedValue = Number.parseFloat(cleanedStr);
+            if (Number.isFinite(correctedValue) && Math.abs(correctedValue - avg) < Math.abs(value - avg)) {
+              log(`[OCR 보정] AI가 ${value}로 읽은 값을 최근 평균(${avg.toFixed(1)})을 기반으로 ${correctedValue}로 자동 보정했습니다.`);
+              value = correctedValue;
+            }
+          }
+        }
+        return value;
+      }
+      return null;
     }
 
     function rememberCooldownResponse(value) {
