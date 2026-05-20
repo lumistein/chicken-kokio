@@ -348,22 +348,38 @@
 
     .crop-box {
       position: absolute;
-      left: 50%;
-      top: 50%;
       width: 25px;
       height: 25px;
       min-width: 8px;
       min-height: 8px;
       border: 2px solid var(--accent);
       background: rgba(242, 201, 76, 0.12);
-      box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.35);
-      transform: translate(-50%, -50%);
+      box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.0);
       cursor: move;
       display: none;
+      z-index: 2;
     }
 
     .crop-box.visible {
       display: block;
+    }
+
+    .crop-box.active-drag {
+      box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.35);
+      z-index: 10;
+    }
+
+    .crop-label {
+      position: absolute;
+      top: -22px;
+      left: -2px;
+      font-size: 11px;
+      font-weight: 900;
+      padding: 1px 6px;
+      border-radius: 4px 4px 0 0;
+      color: #0f130e;
+      pointer-events: none;
+      white-space: nowrap;
     }
 
     .handle {
@@ -525,6 +541,247 @@
       white-space: nowrap;
     }
 
+    /* ── Skill Slots ── */
+    .slots-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding-bottom: 4px;
+    }
+
+    .slots-header h3 {
+      font-size: 14px;
+      font-weight: 800;
+      color: var(--soft);
+    }
+
+    .add-slot-btn {
+      min-height: 34px;
+      padding: 0 14px;
+      font-size: 13px;
+      font-weight: 800;
+      border: 1px dashed var(--line-2);
+      background: transparent;
+      color: var(--accent);
+    }
+
+    .add-slot-btn:hover:not(:disabled) {
+      border-color: var(--accent);
+      background: rgba(242, 201, 76, 0.06);
+    }
+
+    .skill-slots-container {
+      display: grid;
+      gap: 12px;
+    }
+
+    .skill-slot {
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: #161b14;
+      overflow: hidden;
+      transition: border-color 200ms ease;
+    }
+
+    .skill-slot:hover {
+      border-color: var(--line-2);
+    }
+
+    .skill-slot-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 10px 14px;
+      background: rgba(32, 37, 30, 0.6);
+      border-bottom: 1px solid var(--line);
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .skill-slot-header:hover {
+      background: rgba(40, 46, 37, 0.7);
+    }
+
+    .slot-badge-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .slot-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 28px;
+      height: 28px;
+      border-radius: 6px;
+      font-size: 13px;
+      font-weight: 900;
+      color: #0f130e;
+      flex-shrink: 0;
+    }
+
+    .slot-title {
+      font-size: 14px;
+      font-weight: 750;
+      color: var(--text);
+    }
+
+    .slot-header-right {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .slot-status-mini {
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--muted);
+      padding: 3px 8px;
+      border-radius: 4px;
+      background: rgba(15, 19, 14, 0.5);
+    }
+
+    .slot-status-mini.active {
+      color: var(--ok);
+      background: rgba(126, 231, 135, 0.08);
+    }
+
+    .slot-delete-btn {
+      min-height: 28px;
+      width: 28px;
+      padding: 0;
+      border: 1px solid transparent;
+      background: transparent;
+      color: var(--muted);
+      font-size: 16px;
+      font-weight: 700;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .slot-delete-btn:hover:not(:disabled) {
+      color: var(--danger);
+      border-color: rgba(255, 123, 114, 0.3);
+      background: rgba(255, 123, 114, 0.08);
+    }
+
+    .skill-slot-body {
+      display: grid;
+      gap: 12px;
+      padding: 14px;
+    }
+
+    .skill-slot.collapsed .skill-slot-body {
+      display: none;
+    }
+
+    .sound-mode-row {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      font-size: 13px;
+      font-weight: 650;
+      color: var(--soft);
+    }
+
+    .sound-mode-row label {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      cursor: pointer;
+      flex-direction: row;
+    }
+
+    .sound-mode-row input[type="radio"] {
+      width: 16px;
+      height: 16px;
+      min-height: 16px;
+      accent-color: var(--accent);
+    }
+
+    .webaudio-config {
+      display: none;
+      gap: 12px;
+      border: 1px solid var(--line);
+      border-radius: 7px;
+      background: #0f130e;
+      padding: 12px;
+    }
+
+    .webaudio-config.active {
+      display: grid;
+    }
+
+    .file-sound-config {
+      display: none;
+      gap: 12px;
+      border: 1px solid var(--line);
+      border-radius: 7px;
+      background: #0f130e;
+      padding: 12px;
+    }
+
+    .file-sound-config.active {
+      display: grid;
+    }
+
+    .slot-metrics {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 8px;
+    }
+
+    .slot-metric {
+      display: grid;
+      gap: 4px;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      background: #0f130e;
+      padding: 8px;
+    }
+
+    .slot-metric span {
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 750;
+    }
+
+    .slot-metric strong {
+      font-size: 16px;
+      line-height: 1;
+      letter-spacing: 0;
+    }
+
+    .slot-crop-row {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr)) auto;
+      gap: 10px;
+      align-items: end;
+    }
+
+    .slot-crop-row button {
+      min-height: 40px;
+      font-size: 12px;
+      font-weight: 700;
+      padding: 0 10px;
+      white-space: nowrap;
+    }
+
+    .collapse-icon {
+      font-size: 12px;
+      color: var(--muted);
+      transition: transform 200ms ease;
+    }
+
+    .skill-slot.collapsed .collapse-icon {
+      transform: rotate(-90deg);
+    }
+
     @media (max-width: 1060px) {
       .layout {
         grid-template-columns: 1fr;
@@ -548,7 +805,9 @@
       .grid-2,
       .grid-3,
       .metric-grid,
-      .preview-tools {
+      .preview-tools,
+      .slot-metrics,
+      .slot-crop-row {
         grid-template-columns: 1fr;
       }
 
@@ -570,7 +829,7 @@
         <div class="brand-mark">CD</div>
         <div>
           <h1>쿨타임 알림</h1>
-          <p class="subtle">지정한 화면 영역의 노란 숫자를 읽고, 보정된 시간 뒤에 chicken.mp3를 재생합니다.</p>
+          <p class="subtle">지정한 화면 영역의 노란 숫자를 읽고, 보정된 시간 뒤에 알림 소리를 재생합니다.</p>
         </div>
       </div>
       <div id="statusPill" class="status-pill">
@@ -676,35 +935,11 @@
         </div>
 
         <div class="panel-body">
-          <div class="grid-3">
-            <label>
-              자동 세팅
-              <select id="cooldownPreset">
-                <option value="custom">사용자 지정</option>
-                <option value="janus30">야누스 30</option>
-                <option value="janus30Under">야누스 30 미만</option>
-              </select>
-            </label>
-            <label>
-              알림 지연(초)
-              <input id="notifyOffsetSec" type="number" min="-60" step="0.1" value="0">
-            </label>
-            <label>
-              재인식 대기(초)
-              <input id="repeatAfterSec" type="number" min="0" step="0.1" value="3">
-            </label>
-            <label>
-              볼륨
-              <input id="alarmVolume" type="number" min="0" max="1" step="0.05" value="1">
-            </label>
-          </div>
-
           <div class="button-row">
             <button id="selectScreen" type="button">화면 선택</button>
             <button id="singleRead" type="button">1회 인식</button>
             <button id="startBtn" class="primary" type="button">시작</button>
             <button id="stopBtn" class="stop" type="button" disabled>종료</button>
-            <button id="testSound" type="button">소리 테스트</button>
           </div>
 
           <label class="inline-check">
@@ -730,55 +965,19 @@
             </div>
           </div>
 
+          <!-- Skill Slots -->
+          <div class="slots-header">
+            <h3>스킬 슬롯</h3>
+            <button id="addSlotBtn" class="add-slot-btn" type="button">+ 스킬 슬롯 추가</button>
+          </div>
+          <div id="skillSlotsContainer" class="skill-slots-container"></div>
+
+          <!-- Preview area -->
           <div class="capture-area">
             <div id="previewWrap" class="preview-wrap">
               <video id="sourceVideo" autoplay playsinline muted></video>
               <div id="emptyPreview" class="empty-preview">화면 선택을 누르면 선택한 창이나 탭이 여기에 표시됩니다.</div>
-              <div id="cropBox" class="crop-box" aria-label="capture region">
-                <div class="handle" data-handle="resize"></div>
-              </div>
-            </div>
-
-            <div class="preview-tools">
-              <div class="grid-3">
-                <label>
-                  X
-                  <input id="cropX" type="number" min="0" step="1" value="0">
-                </label>
-                <label>
-                  Y
-                  <input id="cropY" type="number" min="0" step="1" value="0">
-                </label>
-                <label>
-                  크기(px)
-                  <input id="cropSize" type="number" min="8" step="1" value="25">
-                </label>
-              </div>
-              <div class="thumb-card">
-                <p class="subtle">최근 캡처</p>
-                <div class="thumb-stage">
-                  <canvas id="captureCanvas" width="25" height="25"></canvas>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div class="metric-grid">
-            <div class="metric">
-              <span>AI 응답</span>
-              <strong id="aiAnswer">-</strong>
-            </div>
-            <div class="metric">
-              <span>응답 지연</span>
-              <strong id="latencyText">-</strong>
-            </div>
-            <div class="metric">
-              <span>보정 쿨타임</span>
-              <strong id="cooldownText">-</strong>
-            </div>
-            <div class="metric">
-              <span>재생까지</span>
-              <strong id="remainingText">-</strong>
+              <!-- crop boxes will be injected here dynamically -->
             </div>
           </div>
 
@@ -793,6 +992,17 @@
 
   <script>
     const $ = (id) => document.getElementById(id);
+
+    const SLOT_COLORS = [
+      { border: "#f2c94c", bg: "rgba(242, 201, 76, 0.12)", badge: "#f2c94c" },
+      { border: "#54c6a8", bg: "rgba(84, 198, 168, 0.12)", badge: "#54c6a8" },
+      { border: "#e879f9", bg: "rgba(232, 121, 249, 0.12)", badge: "#e879f9" },
+      { border: "#f97316", bg: "rgba(249, 115, 22, 0.12)", badge: "#f97316" },
+      { border: "#60a5fa", bg: "rgba(96, 165, 250, 0.12)", badge: "#60a5fa" },
+      { border: "#fb7185", bg: "rgba(251, 113, 133, 0.12)", badge: "#fb7185" },
+      { border: "#a3e635", bg: "rgba(163, 230, 53, 0.12)", badge: "#a3e635" },
+      { border: "#c084fc", bg: "rgba(192, 132, 252, 0.12)", badge: "#c084fc" }
+    ];
 
     const els = {
       statusPill: $("statusPill"),
@@ -819,10 +1029,6 @@
       clearSettings: $("clearSettings"),
       loadServiceJson: $("loadServiceJson"),
       serviceJsonFile: $("serviceJsonFile"),
-      cooldownPreset: $("cooldownPreset"),
-      notifyOffsetSec: $("notifyOffsetSec"),
-      repeatAfterSec: $("repeatAfterSec"),
-      alarmVolume: $("alarmVolume"),
       fantasiaMinutes: $("fantasiaMinutes"),
       fantasiaStart: $("fantasiaStart"),
       fantasiaStop: $("fantasiaStop"),
@@ -832,26 +1038,18 @@
       singleRead: $("singleRead"),
       startBtn: $("startBtn"),
       stopBtn: $("stopBtn"),
-      testSound: $("testSound"),
       lowLoadCapture: $("lowLoadCapture"),
       previewWrap: $("previewWrap"),
       sourceVideo: $("sourceVideo"),
       emptyPreview: $("emptyPreview"),
-      cropBox: $("cropBox"),
-      cropX: $("cropX"),
-      cropY: $("cropY"),
-      cropSize: $("cropSize"),
-      captureCanvas: $("captureCanvas"),
-      aiAnswer: $("aiAnswer"),
-      latencyText: $("latencyText"),
-      cooldownText: $("cooldownText"),
-      remainingText: $("remainingText"),
+      addSlotBtn: $("addSlotBtn"),
+      skillSlotsContainer: $("skillSlotsContainer"),
       log: $("log"),
       alarmAudio: $("alarmAudio"),
       fantasiaAudio: $("fantasiaAudio")
     };
 
-    const STORAGE_KEY = "cooldown-reminder-settings-v1";
+    const STORAGE_KEY = "cooldown-reminder-settings-v2";
     const OCR_PROMPT = [
       "이미지 안에 노란색 글씨로 표시된 쿨타임 숫자만 읽어주세요.",
       "다른 텍스트, 단위, 설명 없이 숫자만 답하세요.",
@@ -870,22 +1068,67 @@
       }
     };
 
+    let slotIdCounter = 0;
+    let audioCtx = null;
+
+    function getAudioCtx() {
+      if (!audioCtx) {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      }
+      if (audioCtx.state === "suspended") {
+        audioCtx.resume();
+      }
+      return audioCtx;
+    }
+
     const state = {
       provider: "vertex",
       stream: null,
       running: false,
-      activeRunId: 0,
-      timerId: null,
-      tickerId: null,
-      nextPlayAt: null,
-      cooldownHistory: [],
+      globalRunId: 0,
+      slots: [],
       fantasiaTimerId: null,
       fantasiaTickerId: null,
       fantasiaPlayAt: null,
-      crop: { x: 0, y: 0, size: 25 },
-      videoBox: null,
-      drag: null
+      drag: null,
+      activeDragSlotId: null
     };
+
+    function createSlotData(overrides = {}) {
+      slotIdCounter += 1;
+      return {
+        id: slotIdCounter,
+        cooldownPreset: "custom",
+        notifyOffsetSec: 0,
+        repeatAfterSec: 3,
+        volume: 1,
+        soundMode: "file",        // 'file' | 'webaudio'
+        soundRepeatCount: 1,      // for file mode
+        webAudio: {
+          waveform: "sine",
+          frequency: 880,
+          duration: 200,
+          repeatCount: 3,
+          repeatGap: 150
+        },
+        crop: { x: 0, y: 0, size: 25 },
+        // Runtime
+        running: false,
+        activeRunId: 0,
+        timerId: null,
+        tickerId: null,
+        nextPlayAt: null,
+        cooldownHistory: [],
+        collapsed: false,
+        // DOM references (set after render)
+        els: {},
+        cropBoxEl: null,
+        canvasEl: null,
+        ...overrides
+      };
+    }
+
+    // ── Utilities ──
 
     function nowLabel() {
       return new Intl.DateTimeFormat("ko-KR", {
@@ -934,13 +1177,26 @@
     }
 
     function readNumber(input, fallback = 0) {
-      const value = Number.parseFloat(input.value);
+      const val = typeof input === "object" && input !== null ? input.value : input;
+      const value = Number.parseFloat(val);
       return Number.isFinite(value) ? value : fallback;
     }
 
     function wait(ms) {
       return new Promise((resolve) => setTimeout(resolve, ms));
     }
+
+    function getSlotColor(slot) {
+      const index = state.slots.indexOf(slot);
+      return SLOT_COLORS[(index >= 0 ? index : slot.id - 1) % SLOT_COLORS.length];
+    }
+
+    function getSlotDisplayIndex(slot) {
+      const index = state.slots.indexOf(slot);
+      return index >= 0 ? index + 1 : slot.id;
+    }
+
+    // ── Provider switching ──
 
     function switchProvider(provider) {
       state.provider = provider;
@@ -958,6 +1214,8 @@
       els.customPanel.classList.toggle("active", isCustom);
       persistSettingsIfEnabled();
     }
+
+    // ── Settings save/load ──
 
     function getSettings() {
       return {
@@ -980,14 +1238,20 @@
           partOrder: els.customPartOrder.value || "imageFirst"
         },
         capture: {
-          cooldownPreset: els.cooldownPreset.value,
-          notifyOffsetSec: readNumber(els.notifyOffsetSec, 0),
-          repeatAfterSec: readNumber(els.repeatAfterSec, 3),
-          alarmVolume: Math.min(1, Math.max(0, readNumber(els.alarmVolume, 1))),
           fantasiaMinutes: Math.max(0, readNumber(els.fantasiaMinutes, 10)),
-          lowLoadCapture: els.lowLoadCapture.checked,
-          crop: { ...state.crop }
+          lowLoadCapture: els.lowLoadCapture.checked
         },
+        slots: state.slots.map(slot => ({
+          cooldownPreset: slot.cooldownPreset,
+          notifyOffsetSec: slot.notifyOffsetSec,
+          repeatAfterSec: slot.repeatAfterSec,
+          volume: slot.volume,
+          soundMode: slot.soundMode,
+          soundRepeatCount: slot.soundRepeatCount,
+          webAudio: { ...slot.webAudio },
+          crop: { ...slot.crop },
+          collapsed: slot.collapsed
+        })),
         saveSettings: els.saveSettings.checked
       };
     }
@@ -1014,23 +1278,47 @@
         els.customPartOrder.value = settings.custom.partOrder || "imageFirst";
       }
       if (settings.capture) {
-        els.cooldownPreset.value = settings.capture.cooldownPreset || "custom";
-        els.notifyOffsetSec.value = settings.capture.notifyOffsetSec ?? 0;
-        els.repeatAfterSec.value = settings.capture.repeatAfterSec ?? 3;
-        els.alarmVolume.value = settings.capture.alarmVolume ?? 1;
         els.fantasiaMinutes.value = settings.capture.fantasiaMinutes ?? 10;
         els.lowLoadCapture.checked = settings.capture.lowLoadCapture !== false;
-        if (settings.capture.crop) {
-          state.crop = {
-            x: Number(settings.capture.crop.x) || 0,
-            y: Number(settings.capture.crop.y) || 0,
-            size: Math.max(8, Number(settings.capture.crop.size) || 25)
-          };
-        }
       }
+
+      // Clear existing slots
+      for (const slot of [...state.slots]) {
+        removeSlot(slot.id, true);
+      }
+
+      if (Array.isArray(settings.slots) && settings.slots.length > 0) {
+        for (const slotData of settings.slots) {
+          const slot = createSlotData({
+            cooldownPreset: slotData.cooldownPreset || "custom",
+            notifyOffsetSec: slotData.notifyOffsetSec ?? 0,
+            repeatAfterSec: slotData.repeatAfterSec ?? 3,
+            volume: slotData.volume ?? 1,
+            soundMode: slotData.soundMode || "file",
+            soundRepeatCount: slotData.soundRepeatCount ?? 1,
+            webAudio: {
+              waveform: slotData.webAudio?.waveform || "sine",
+              frequency: slotData.webAudio?.frequency ?? 880,
+              duration: slotData.webAudio?.duration ?? 200,
+              repeatCount: slotData.webAudio?.repeatCount ?? 3,
+              repeatGap: slotData.webAudio?.repeatGap ?? 150
+            },
+            crop: {
+              x: slotData.crop?.x ?? 0,
+              y: slotData.crop?.y ?? 0,
+              size: Math.max(8, slotData.crop?.size ?? 25)
+            },
+            collapsed: Boolean(slotData.collapsed)
+          });
+          state.slots.push(slot);
+          renderSlotElement(slot);
+          renderCropBoxForSlot(slot);
+        }
+      } else {
+        addSlot();
+      }
+
       els.saveSettings.checked = Boolean(settings.saveSettings);
-      syncCropInputs();
-      renderCropBox();
     }
 
     function loadSettings() {
@@ -1040,10 +1328,36 @@
           applySettings(JSON.parse(raw));
           log("저장된 설정을 불러왔습니다.");
         } else {
-          syncCropInputs();
+          // Try v1 migration
+          const v1 = localStorage.getItem("cooldown-reminder-settings-v1");
+          if (v1) {
+            const oldSettings = JSON.parse(v1);
+            const newSettings = {
+              ...oldSettings,
+              slots: [{
+                cooldownPreset: oldSettings.capture?.cooldownPreset || "custom",
+                notifyOffsetSec: oldSettings.capture?.notifyOffsetSec ?? 0,
+                repeatAfterSec: oldSettings.capture?.repeatAfterSec ?? 3,
+                volume: oldSettings.capture?.alarmVolume ?? 1,
+                soundMode: "file",
+                soundRepeatCount: 1,
+                webAudio: { waveform: "sine", frequency: 880, duration: 200, repeatCount: 3, repeatGap: 150 },
+                crop: oldSettings.capture?.crop || { x: 0, y: 0, size: 25 }
+              }],
+              capture: {
+                fantasiaMinutes: oldSettings.capture?.fantasiaMinutes ?? 10,
+                lowLoadCapture: oldSettings.capture?.lowLoadCapture !== false
+              }
+            };
+            applySettings(newSettings);
+            log("v1 설정을 마이그레이션했습니다.");
+          } else {
+            addSlot();
+          }
         }
       } catch (error) {
         log(`설정 불러오기 실패: ${error.message}`);
+        if (state.slots.length === 0) addSlot();
       }
     }
 
@@ -1063,39 +1377,417 @@
 
     function clearSavedSettings() {
       localStorage.removeItem(STORAGE_KEY);
+      localStorage.removeItem("cooldown-reminder-settings-v1");
       els.saveSettings.checked = false;
       log("저장된 설정을 삭제했습니다.");
     }
 
-    function applyCooldownPreset(value) {
-      const preset = COOLDOWN_PRESETS[value];
-      if (!preset) {
-        els.cooldownPreset.value = "custom";
+    // ── Slot Management ──
+
+    function addSlot(overrides = {}) {
+      const slot = createSlotData(overrides);
+      state.slots.push(slot);
+      renderSlotElement(slot);
+      renderCropBoxForSlot(slot);
+      persistSettingsIfEnabled();
+      log(`스킬 슬롯 ${getSlotDisplayIndex(slot)}을 추가했습니다.`);
+      return slot;
+    }
+
+    function removeSlot(slotId, silent = false) {
+      const index = state.slots.findIndex(s => s.id === slotId);
+      if (index < 0) return;
+      const slot = state.slots[index];
+
+      // Stop slot loop
+      stopSlotLoop(slot);
+
+      // Remove DOM
+      const card = document.getElementById(`slot-card-${slotId}`);
+      if (card) card.remove();
+      const cropBox = document.getElementById(`crop-box-${slotId}`);
+      if (cropBox) cropBox.remove();
+
+      state.slots.splice(index, 1);
+
+      // Re-number remaining slots
+      updateAllSlotNumbers();
+      renderAllCropBoxes();
+
+      if (!silent) {
         persistSettingsIfEnabled();
-        return;
+        log(`스킬 슬롯을 삭제했습니다.`);
       }
-      els.notifyOffsetSec.value = preset.notifyOffsetSec;
-      els.repeatAfterSec.value = preset.repeatAfterSec;
-      els.cooldownPreset.value = value;
-      persistSettingsIfEnabled();
-      log(`${preset.label} 자동 세팅을 적용했습니다.`);
     }
 
-    function markCooldownPresetCustom() {
-      if (els.cooldownPreset.value !== "custom") {
-        els.cooldownPreset.value = "custom";
-      }
-      persistSettingsIfEnabled();
+    function updateAllSlotNumbers() {
+      state.slots.forEach((slot, i) => {
+        const badge = document.querySelector(`#slot-card-${slot.id} .slot-badge`);
+        if (badge) {
+          const color = getSlotColor(slot);
+          badge.textContent = i + 1;
+          badge.style.background = color.badge;
+        }
+        const title = document.querySelector(`#slot-card-${slot.id} .slot-title`);
+        if (title) {
+          title.textContent = `슬롯 ${i + 1}`;
+        }
+      });
     }
 
-    async function loadServiceAccountFile(file) {
-      const data = JSON.parse(await file.text());
-      els.vertexProjectId.value = data.project_id || els.vertexProjectId.value;
-      els.vertexClientEmail.value = data.client_email || els.vertexClientEmail.value;
-      els.vertexPrivateKey.value = data.private_key || els.vertexPrivateKey.value;
-      persistSettingsIfEnabled();
-      log("서비스 계정 JSON을 읽었습니다.");
+    // ── Slot DOM Rendering ──
+
+    function renderSlotElement(slot) {
+      const color = getSlotColor(slot);
+      const displayIndex = getSlotDisplayIndex(slot);
+
+      const card = document.createElement("div");
+      card.className = `skill-slot${slot.collapsed ? " collapsed" : ""}`;
+      card.id = `slot-card-${slot.id}`;
+
+      card.innerHTML = `
+        <div class="skill-slot-header" data-action="toggle">
+          <div class="slot-badge-row">
+            <div class="slot-badge" style="background:${color.badge}">${displayIndex}</div>
+            <span class="slot-title">슬롯 ${displayIndex}</span>
+            <span class="collapse-icon">▼</span>
+          </div>
+          <div class="slot-header-right">
+            <span class="slot-status-mini" data-el="statusMini">대기</span>
+            <button class="slot-delete-btn" type="button" data-action="delete" title="슬롯 삭제">✕</button>
+          </div>
+        </div>
+        <div class="skill-slot-body">
+          <div class="grid-3">
+            <label>
+              자동 세팅
+              <select data-el="cooldownPreset">
+                <option value="custom">사용자 지정</option>
+                <option value="janus30">야누스 30</option>
+                <option value="janus30Under">야누스 30 미만</option>
+              </select>
+            </label>
+            <label>
+              알림 지연(초)
+              <input data-el="notifyOffsetSec" type="number" min="-60" step="0.1" value="${slot.notifyOffsetSec}">
+            </label>
+            <label>
+              재인식 대기(초)
+              <input data-el="repeatAfterSec" type="number" min="0" step="0.1" value="${slot.repeatAfterSec}">
+            </label>
+          </div>
+          <label>
+            볼륨
+            <input data-el="volume" type="number" min="0" max="1" step="0.05" value="${slot.volume}">
+          </label>
+
+          <div style="display:grid;gap:8px;">
+            <div class="sound-mode-row">
+              <span style="color:var(--muted);">소리:</span>
+              <label><input type="radio" name="sound-mode-${slot.id}" value="file" ${slot.soundMode === "file" ? "checked" : ""} data-el="soundModeFile"> chicken.mp3</label>
+              <label><input type="radio" name="sound-mode-${slot.id}" value="webaudio" ${slot.soundMode === "webaudio" ? "checked" : ""} data-el="soundModeWebAudio"> Web Audio</label>
+            </div>
+            <div class="file-sound-config ${slot.soundMode === "file" ? "active" : ""}" data-el="fileSoundConfig">
+              <label>
+                반복 횟수
+                <input data-el="soundRepeatCount" type="number" min="1" max="10" step="1" value="${slot.soundRepeatCount}">
+              </label>
+            </div>
+            <div class="webaudio-config ${slot.soundMode === "webaudio" ? "active" : ""}" data-el="webAudioConfig">
+              <div class="grid-2">
+                <label>
+                  파형
+                  <select data-el="waveform">
+                    <option value="sine" ${slot.webAudio.waveform === "sine" ? "selected" : ""}>Sine</option>
+                    <option value="square" ${slot.webAudio.waveform === "square" ? "selected" : ""}>Square</option>
+                    <option value="triangle" ${slot.webAudio.waveform === "triangle" ? "selected" : ""}>Triangle</option>
+                    <option value="sawtooth" ${slot.webAudio.waveform === "sawtooth" ? "selected" : ""}>Sawtooth</option>
+                  </select>
+                </label>
+                <label>
+                  주파수 (Hz)
+                  <input data-el="frequency" type="number" min="200" max="2000" step="10" value="${slot.webAudio.frequency}">
+                </label>
+              </div>
+              <div class="grid-3">
+                <label>
+                  길이 (ms)
+                  <input data-el="duration" type="number" min="50" max="2000" step="10" value="${slot.webAudio.duration}">
+                </label>
+                <label>
+                  반복 횟수
+                  <input data-el="waRepeatCount" type="number" min="1" max="20" step="1" value="${slot.webAudio.repeatCount}">
+                </label>
+                <label>
+                  간격 (ms)
+                  <input data-el="repeatGap" type="number" min="50" max="1000" step="10" value="${slot.webAudio.repeatGap}">
+                </label>
+              </div>
+            </div>
+          </div>
+
+          <div class="slot-crop-row">
+            <label>
+              X
+              <input data-el="cropX" type="number" min="0" step="1" value="${Math.round(slot.crop.x)}">
+            </label>
+            <label>
+              Y
+              <input data-el="cropY" type="number" min="0" step="1" value="${Math.round(slot.crop.y)}">
+            </label>
+            <label>
+              크기(px)
+              <input data-el="cropSize" type="number" min="8" step="1" value="${Math.round(slot.crop.size)}">
+            </label>
+            <button type="button" data-action="testSound">소리 테스트</button>
+          </div>
+
+          <div class="slot-metrics">
+            <div class="slot-metric"><span>AI 응답</span><strong data-el="aiAnswer">-</strong></div>
+            <div class="slot-metric"><span>응답 지연</span><strong data-el="latencyText">-</strong></div>
+            <div class="slot-metric"><span>보정 쿨타임</span><strong data-el="cooldownText">-</strong></div>
+            <div class="slot-metric"><span>재생까지</span><strong data-el="remainingText">-</strong></div>
+          </div>
+
+          <div style="display:grid;gap:6px;">
+            <p class="subtle" data-el="thumbLabel">최근 캡처</p>
+            <div class="thumb-stage">
+              <canvas data-el="captureCanvas" width="${slot.crop.size}" height="${slot.crop.size}" style="width:min(100%,120px);height:auto;image-rendering:pixelated;"></canvas>
+            </div>
+          </div>
+        </div>
+      `;
+
+      // Bind DOM element references
+      const elMap = {};
+      card.querySelectorAll("[data-el]").forEach(el => {
+        elMap[el.dataset.el] = el;
+      });
+      slot.els = elMap;
+      slot.canvasEl = elMap.captureCanvas;
+
+      // Set preset value
+      if (elMap.cooldownPreset) {
+        elMap.cooldownPreset.value = slot.cooldownPreset;
+      }
+
+      // Event: toggle collapse
+      card.querySelector('[data-action="toggle"]').addEventListener("click", (e) => {
+        if (e.target.closest('[data-action="delete"]')) return;
+        slot.collapsed = !slot.collapsed;
+        card.classList.toggle("collapsed", slot.collapsed);
+        persistSettingsIfEnabled();
+      });
+
+      // Event: delete
+      card.querySelector('[data-action="delete"]').addEventListener("click", (e) => {
+        e.stopPropagation();
+        if (state.slots.length <= 1) {
+          log("최소 1개의 슬롯이 필요합니다.");
+          return;
+        }
+        removeSlot(slot.id);
+      });
+
+      // Event: test sound
+      card.querySelector('[data-action="testSound"]').addEventListener("click", async () => {
+        try {
+          syncSlotFromUI(slot);
+          await playSlotSound(slot);
+        } catch (err) {
+          log(`소리 테스트 실패: ${err.message}`);
+        }
+      });
+
+      // Event: preset change
+      elMap.cooldownPreset.addEventListener("change", () => {
+        const val = elMap.cooldownPreset.value;
+        const preset = COOLDOWN_PRESETS[val];
+        if (preset) {
+          elMap.notifyOffsetSec.value = preset.notifyOffsetSec;
+          elMap.repeatAfterSec.value = preset.repeatAfterSec;
+          slot.cooldownPreset = val;
+          slot.notifyOffsetSec = preset.notifyOffsetSec;
+          slot.repeatAfterSec = preset.repeatAfterSec;
+          log(`슬롯 ${getSlotDisplayIndex(slot)}: ${preset.label} 적용`);
+        } else {
+          slot.cooldownPreset = "custom";
+        }
+        persistSettingsIfEnabled();
+      });
+
+      // Event: sound mode switch
+      const onSoundModeChange = () => {
+        const mode = elMap.soundModeWebAudio.checked ? "webaudio" : "file";
+        slot.soundMode = mode;
+        elMap.fileSoundConfig.classList.toggle("active", mode === "file");
+        elMap.webAudioConfig.classList.toggle("active", mode === "webaudio");
+        persistSettingsIfEnabled();
+      };
+      elMap.soundModeFile.addEventListener("change", onSoundModeChange);
+      elMap.soundModeWebAudio.addEventListener("change", onSoundModeChange);
+
+      // Event: inputs change -> persist
+      const inputEls = [
+        elMap.notifyOffsetSec, elMap.repeatAfterSec, elMap.volume,
+        elMap.soundRepeatCount, elMap.waveform, elMap.frequency,
+        elMap.duration, elMap.waRepeatCount, elMap.repeatGap
+      ];
+      for (const inp of inputEls) {
+        inp.addEventListener("input", () => {
+          syncSlotFromUI(slot);
+          // If user manually changes timing, set preset to custom
+          if (inp === elMap.notifyOffsetSec || inp === elMap.repeatAfterSec) {
+            elMap.cooldownPreset.value = "custom";
+            slot.cooldownPreset = "custom";
+          }
+          persistSettingsIfEnabled();
+        });
+      }
+      elMap.waveform.addEventListener("change", () => {
+        syncSlotFromUI(slot);
+        persistSettingsIfEnabled();
+      });
+
+      // Event: crop inputs
+      for (const inp of [elMap.cropX, elMap.cropY, elMap.cropSize]) {
+        inp.addEventListener("input", () => {
+          slot.crop.x = Math.max(0, readNumber(elMap.cropX, 0));
+          slot.crop.y = Math.max(0, readNumber(elMap.cropY, 0));
+          slot.crop.size = Math.max(8, readNumber(elMap.cropSize, 25));
+          renderCropBoxForSlot(slot);
+          persistSettingsIfEnabled();
+        });
+      }
+
+      els.skillSlotsContainer.appendChild(card);
     }
+
+    function syncSlotFromUI(slot) {
+      const e = slot.els;
+      slot.notifyOffsetSec = readNumber(e.notifyOffsetSec, 0);
+      slot.repeatAfterSec = readNumber(e.repeatAfterSec, 3);
+      slot.volume = Math.min(1, Math.max(0, readNumber(e.volume, 1)));
+      slot.soundRepeatCount = Math.max(1, Math.min(10, Math.round(readNumber(e.soundRepeatCount, 1))));
+      slot.webAudio.waveform = e.waveform.value;
+      slot.webAudio.frequency = Math.max(200, Math.min(2000, readNumber(e.frequency, 880)));
+      slot.webAudio.duration = Math.max(50, Math.min(2000, readNumber(e.duration, 200)));
+      slot.webAudio.repeatCount = Math.max(1, Math.min(20, Math.round(readNumber(e.waRepeatCount, 3))));
+      slot.webAudio.repeatGap = Math.max(50, Math.min(1000, readNumber(e.repeatGap, 150)));
+    }
+
+    // ── Crop Box Rendering ──
+
+    function renderCropBoxForSlot(slot) {
+      if (!els.sourceVideo.videoWidth) return;
+      clampCrop(slot);
+      const color = getSlotColor(slot);
+      let box = document.getElementById(`crop-box-${slot.id}`);
+      if (!box) {
+        box = document.createElement("div");
+        box.className = "crop-box";
+        box.id = `crop-box-${slot.id}`;
+        box.innerHTML = `<div class="crop-label"></div><div class="handle" data-handle="resize"></div>`;
+        slot.cropBoxEl = box;
+        els.previewWrap.appendChild(box);
+        attachCropBoxEvents(slot, box);
+      }
+
+      const labelEl = box.querySelector(".crop-label");
+      const handleEl = box.querySelector(".handle");
+      const displayIndex = getSlotDisplayIndex(slot);
+
+      box.style.borderColor = color.border;
+      box.style.background = color.bg;
+      labelEl.style.background = color.badge;
+      labelEl.textContent = displayIndex;
+      handleEl.style.background = color.badge;
+
+      const vbox = getVideoContentBox();
+      const left = vbox.left + (slot.crop.x / vbox.videoWidth) * vbox.width;
+      const top = vbox.top + (slot.crop.y / vbox.videoHeight) * vbox.height;
+      const size = (slot.crop.size / vbox.videoWidth) * vbox.width;
+      box.style.transform = "none";
+      box.style.left = `${left}px`;
+      box.style.top = `${top}px`;
+      box.style.width = `${Math.max(8, size)}px`;
+      box.style.height = `${Math.max(8, size)}px`;
+      box.classList.add("visible");
+
+      syncSlotCropInputs(slot);
+    }
+
+    function renderAllCropBoxes() {
+      for (const slot of state.slots) {
+        renderCropBoxForSlot(slot);
+      }
+    }
+
+    function syncSlotCropInputs(slot) {
+      if (!slot.els.cropX) return;
+      slot.els.cropX.value = Math.round(slot.crop.x);
+      slot.els.cropY.value = Math.round(slot.crop.y);
+      slot.els.cropSize.value = Math.round(slot.crop.size);
+    }
+
+    function clampCrop(slot) {
+      const videoWidth = els.sourceVideo.videoWidth || Math.max(25, slot.crop.size);
+      const videoHeight = els.sourceVideo.videoHeight || Math.max(25, slot.crop.size);
+      slot.crop.size = Math.max(8, Math.min(slot.crop.size, videoWidth, videoHeight));
+      slot.crop.x = Math.max(0, Math.min(slot.crop.x, videoWidth - slot.crop.size));
+      slot.crop.y = Math.max(0, Math.min(slot.crop.y, videoHeight - slot.crop.size));
+    }
+
+    function attachCropBoxEvents(slot, box) {
+      box.addEventListener("pointerdown", (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        const mode = event.target?.dataset?.handle === "resize" ? "resize" : "move";
+        const point = pointToVideoCoords(event.clientX, event.clientY);
+
+        // Remove active from all, add to this one
+        document.querySelectorAll(".crop-box").forEach(b => b.classList.remove("active-drag"));
+        box.classList.add("active-drag");
+
+        state.drag = {
+          mode,
+          startX: point.x,
+          startY: point.y,
+          crop: { ...slot.crop }
+        };
+        state.activeDragSlotId = slot.id;
+        box.setPointerCapture(event.pointerId);
+      });
+
+      box.addEventListener("pointermove", (event) => {
+        if (!state.drag || state.activeDragSlotId !== slot.id) return;
+        const point = pointToVideoCoords(event.clientX, event.clientY);
+        const dx = point.x - state.drag.startX;
+        const dy = point.y - state.drag.startY;
+        if (state.drag.mode === "move") {
+          slot.crop.x = state.drag.crop.x + dx;
+          slot.crop.y = state.drag.crop.y + dy;
+        } else {
+          const delta = Math.max(dx, dy);
+          slot.crop.size = state.drag.crop.size + delta;
+        }
+        renderCropBoxForSlot(slot);
+      });
+
+      box.addEventListener("pointerup", () => {
+        state.drag = null;
+        state.activeDragSlotId = null;
+        box.classList.remove("active-drag");
+        persistSettingsIfEnabled();
+      });
+      box.addEventListener("pointercancel", () => {
+        state.drag = null;
+        state.activeDragSlotId = null;
+        box.classList.remove("active-drag");
+      });
+    }
+
+    // ── Video/Capture ──
 
     function getVideoContentBox() {
       const wrapRect = els.previewWrap.getBoundingClientRect();
@@ -1117,37 +1809,6 @@
       return { left, top, width, height, videoWidth, videoHeight };
     }
 
-    function syncCropInputs() {
-      els.cropX.value = Math.round(state.crop.x);
-      els.cropY.value = Math.round(state.crop.y);
-      els.cropSize.value = Math.round(state.crop.size);
-    }
-
-    function clampCrop() {
-      const videoWidth = els.sourceVideo.videoWidth || Math.max(25, state.crop.size);
-      const videoHeight = els.sourceVideo.videoHeight || Math.max(25, state.crop.size);
-      state.crop.size = Math.max(8, Math.min(state.crop.size, videoWidth, videoHeight));
-      state.crop.x = Math.max(0, Math.min(state.crop.x, videoWidth - state.crop.size));
-      state.crop.y = Math.max(0, Math.min(state.crop.y, videoHeight - state.crop.size));
-    }
-
-    function renderCropBox() {
-      if (!els.sourceVideo.videoWidth) return;
-      clampCrop();
-      const box = getVideoContentBox();
-      const left = box.left + (state.crop.x / box.videoWidth) * box.width;
-      const top = box.top + (state.crop.y / box.videoHeight) * box.height;
-      const size = (state.crop.size / box.videoWidth) * box.width;
-      els.cropBox.style.transform = "none";
-      els.cropBox.style.left = `${left}px`;
-      els.cropBox.style.top = `${top}px`;
-      els.cropBox.style.width = `${Math.max(8, size)}px`;
-      els.cropBox.style.height = `${Math.max(8, size)}px`;
-      els.cropBox.classList.add("visible");
-      syncCropInputs();
-      persistSettingsIfEnabled();
-    }
-
     function pointToVideoCoords(clientX, clientY) {
       const wrapRect = els.previewWrap.getBoundingClientRect();
       const box = getVideoContentBox();
@@ -1157,13 +1818,6 @@
         x: (localX / box.width) * box.videoWidth,
         y: (localY / box.height) * box.videoHeight
       };
-    }
-
-    function updateCropFromInputs() {
-      state.crop.x = Math.max(0, readNumber(els.cropX, 0));
-      state.crop.y = Math.max(0, readNumber(els.cropY, 0));
-      state.crop.size = Math.max(8, readNumber(els.cropSize, 25));
-      renderCropBox();
     }
 
     async function selectScreen() {
@@ -1185,12 +1839,18 @@
       els.sourceVideo.srcObject = stream;
       els.emptyPreview.classList.add("hidden");
       await waitForVideoReady();
-      clampCrop();
-      if (state.crop.x === 0 && state.crop.y === 0) {
-        state.crop.x = Math.max(0, Math.round((els.sourceVideo.videoWidth - state.crop.size) / 2));
-        state.crop.y = Math.max(0, Math.round((els.sourceVideo.videoHeight - state.crop.size) / 2));
+
+      // Position crop boxes for slots that are at 0,0
+      for (const slot of state.slots) {
+        clampCrop(slot);
+        if (slot.crop.x === 0 && slot.crop.y === 0) {
+          const offset = state.slots.indexOf(slot) * 30;
+          slot.crop.x = Math.max(0, Math.round((els.sourceVideo.videoWidth - slot.crop.size) / 2) + offset);
+          slot.crop.y = Math.max(0, Math.round((els.sourceVideo.videoHeight - slot.crop.size) / 2) + offset);
+        }
       }
-      renderCropBox();
+      renderAllCropBoxes();
+
       stream.getVideoTracks()[0].addEventListener("ended", () => {
         if (state.stream === stream) {
           stopAll("화면 공유가 종료되었습니다.");
@@ -1251,13 +1911,13 @@
       });
     }
 
-    function captureRegion() {
+    function captureRegionForSlot(slot) {
       if (!state.stream || !els.sourceVideo.videoWidth) {
         throw new Error("먼저 화면을 선택하세요.");
       }
-      clampCrop();
-      const size = Math.max(8, Math.round(state.crop.size));
-      const canvas = els.captureCanvas;
+      clampCrop(slot);
+      const size = Math.max(8, Math.round(slot.crop.size));
+      const canvas = slot.canvasEl;
       canvas.width = size;
       canvas.height = size;
       const ctx = canvas.getContext("2d", { willReadFrequently: true });
@@ -1265,8 +1925,8 @@
       ctx.clearRect(0, 0, size, size);
       ctx.drawImage(
         els.sourceVideo,
-        Math.round(state.crop.x),
-        Math.round(state.crop.y),
+        Math.round(slot.crop.x),
+        Math.round(slot.crop.y),
         size,
         size,
         0,
@@ -1276,6 +1936,8 @@
       );
       return canvas.toDataURL("image/png").split(",")[1];
     }
+
+    // ── AI Recognition ──
 
     function validateSettings() {
       const settings = getSettings();
@@ -1294,7 +1956,7 @@
       return settings;
     }
 
-    async function recognizeCooldown() {
+    async function recognizeCooldownForSlot(slot) {
       const settings = validateSettings();
       let parsed = null;
       let usedFallback = false;
@@ -1302,19 +1964,20 @@
       const startedAt = performance.now();
       let successfulCaptureStartedAt = startedAt;
       let rawText = "";
+      const displayIndex = getSlotDisplayIndex(slot);
 
       const maxTries = 3;
       for (let attempt = 1; attempt <= maxTries; attempt++) {
         try {
           await wakePreviewForCapture();
           const captureStartedAt = performance.now();
-          const imageBase64 = captureRegion();
+          const imageBase64 = captureRegionForSlot(slot);
           restPreviewAfterCapture();
-          setStatus("AI 인식 중", "running");
+          updateSlotStatus(slot, "인식 중", true);
 
           const text = await callGeminiApi(settings, imageBase64);
           rawText = text;
-          parsed = parseCooldownNumber(text);
+          parsed = parseCooldownNumber(text, slot);
           if (parsed === null) {
             throw new Error(`숫자 인식 실패: ${text || "(빈 응답)"}`);
           }
@@ -1322,13 +1985,13 @@
             throw new Error(`인식된 숫자(${parsed})가 60초를 초과하여 재인식 시도`);
           }
 
-          rememberCooldownResponse(parsed);
+          rememberCooldownResponse(slot, parsed);
           successfulCaptureStartedAt = captureStartedAt;
           break;
         } catch (error) {
-          log(`인식 시도 ${attempt}/${maxTries} 실패: ${error.message}`);
+          log(`슬롯${displayIndex} 인식 시도 ${attempt}/${maxTries} 실패: ${error.message}`);
           if (attempt === maxTries) {
-            const average = getCooldownAverage();
+            const average = getCooldownAverage(slot);
             if (average === null) {
               throw new Error(`${error.message} (최근 평균값이 아직 없습니다)`);
             }
@@ -1345,26 +2008,26 @@
       const totalLatencySec = (performance.now() - startedAt) / 1000;
       const latencySec = (performance.now() - successfulCaptureStartedAt) / 1000;
       const adjustedCooldownSec = Math.max(0, parsed - latencySec);
-      const notifyOffsetSec = settings.capture.notifyOffsetSec;
+      const notifyOffsetSec = slot.notifyOffsetSec;
       const waitUntilSoundSec = Math.max(0, adjustedCooldownSec + notifyOffsetSec);
 
-      els.aiAnswer.textContent = usedFallback ? `평균 ${parsed.toFixed(1)}` : String(parsed);
-      els.latencyText.textContent = formatSeconds(latencySec);
-      els.cooldownText.textContent = formatSeconds(adjustedCooldownSec);
-      els.remainingText.textContent = formatSeconds(waitUntilSoundSec);
+      if (slot.els.aiAnswer) slot.els.aiAnswer.textContent = usedFallback ? `평균 ${parsed.toFixed(1)}` : String(parsed);
+      if (slot.els.latencyText) slot.els.latencyText.textContent = formatSeconds(latencySec);
+      if (slot.els.cooldownText) slot.els.cooldownText.textContent = formatSeconds(adjustedCooldownSec);
+      if (slot.els.remainingText) slot.els.remainingText.textContent = formatSeconds(waitUntilSoundSec);
 
       if (usedFallback) {
-        log(`AI 실패(${failureMessage}) → 최근 ${state.cooldownHistory.length}회 평균 ${parsed.toFixed(2)} 적용, 지연=${latencySec.toFixed(2)}초, 알림=${waitUntilSoundSec.toFixed(2)}초 후`);
+        log(`슬롯${displayIndex}: AI 실패(${failureMessage}) → 평균 ${parsed.toFixed(2)} 적용, 알림=${waitUntilSoundSec.toFixed(2)}초 후`);
       } else {
         const rawSuffix = rawText && String(parsed) !== rawText.trim() ? ` (원본: "${rawText.trim()}")` : "";
-        log(`AI=${parsed}${rawSuffix}, 지연=${latencySec.toFixed(2)}초, 보정=${adjustedCooldownSec.toFixed(2)}초, 알림=${waitUntilSoundSec.toFixed(2)}초 후`);
+        log(`슬롯${displayIndex}: AI=${parsed}${rawSuffix}, 지연=${latencySec.toFixed(2)}초, 알림=${waitUntilSoundSec.toFixed(2)}초 후`);
       }
       persistSettingsIfEnabled();
 
       return { parsed, latencySec, adjustedCooldownSec, waitUntilSoundSec, usedFallback };
     }
 
-    function parseCooldownNumber(text) {
+    function parseCooldownNumber(text, slot) {
       const normalized = String(text || "").trim();
       if (!normalized || /^none$/i.test(normalized)) return null;
       const match = normalized.match(/\d+(?:\.\d+)?/);
@@ -1373,7 +2036,7 @@
       if (Number.isFinite(value)) {
         // AI가 22를 2.2로, 15를 1.5로 잘못 읽는 OCR 오류 자동 보정
         if (value % 1 !== 0 && value < 10) {
-          const avg = getCooldownAverage();
+          const avg = getCooldownAverage(slot);
           if (avg !== null && avg > 10) {
             const cleanedStr = match[0].replace(".", "");
             const correctedValue = Number.parseFloat(cleanedStr);
@@ -1388,18 +2051,18 @@
       return null;
     }
 
-    function rememberCooldownResponse(value) {
+    function rememberCooldownResponse(slot, value) {
       if (!Number.isFinite(value)) return;
-      state.cooldownHistory.push(value);
-      if (state.cooldownHistory.length > 10) {
-        state.cooldownHistory.shift();
+      slot.cooldownHistory.push(value);
+      if (slot.cooldownHistory.length > 10) {
+        slot.cooldownHistory.shift();
       }
     }
 
-    function getCooldownAverage() {
-      if (state.cooldownHistory.length === 0) return null;
-      const sum = state.cooldownHistory.reduce((total, value) => total + value, 0);
-      return sum / state.cooldownHistory.length;
+    function getCooldownAverage(slot) {
+      if (slot.cooldownHistory.length === 0) return null;
+      const sum = slot.cooldownHistory.reduce((total, value) => total + value, 0);
+      return sum / slot.cooldownHistory.length;
     }
 
     async function callGeminiApi(settings, imageBase64) {
@@ -1441,12 +2104,13 @@
       return data;
     }
 
-    function applyAudioVolume(audio) {
-      audio.volume = Math.min(1, Math.max(0, readNumber(els.alarmVolume, 1)));
+    // ── Sound Playback ──
+
+    function applyAudioVolume(audio, volume) {
+      audio.volume = Math.min(1, Math.max(0, volume));
     }
 
     async function unlockAudioElement(audio) {
-      applyAudioVolume(audio);
       try {
         audio.muted = true;
         await audio.play();
@@ -1463,44 +2127,272 @@
       await unlockAudioElement(els.alarmAudio);
     }
 
-    async function playAlarm() {
-      applyAudioVolume(els.alarmAudio);
-      els.alarmAudio.currentTime = 0;
-      await els.alarmAudio.play();
-      log("chicken.mp3를 재생했습니다.");
+    async function playSlotSound(slot) {
+      const displayIndex = getSlotDisplayIndex(slot);
+      if (slot.soundMode === "webaudio") {
+        await playWebAudioBeep(slot);
+        log(`슬롯${displayIndex}: Web Audio 비프음을 재생했습니다.`);
+      } else {
+        await playChickenForSlot(slot);
+        log(`슬롯${displayIndex}: chicken.mp3를 재생했습니다.`);
+      }
+    }
+
+    async function playChickenForSlot(slot) {
+      const count = Math.max(1, Math.min(10, slot.soundRepeatCount));
+      for (let i = 0; i < count; i++) {
+        if (i > 0) await wait(300);
+        applyAudioVolume(els.alarmAudio, slot.volume);
+        els.alarmAudio.currentTime = 0;
+        await els.alarmAudio.play();
+        // Wait for the audio to finish if repeating
+        if (count > 1 && i < count - 1) {
+          await new Promise(resolve => {
+            els.alarmAudio.addEventListener("ended", resolve, { once: true });
+          });
+        }
+      }
+    }
+
+    async function playWebAudioBeep(slot) {
+      const ctx = getAudioCtx();
+      const { waveform, frequency, duration, repeatCount, repeatGap } = slot.webAudio;
+      const vol = Math.min(1, Math.max(0, slot.volume));
+
+      for (let i = 0; i < repeatCount; i++) {
+        if (i > 0) await wait(repeatGap);
+
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = waveform;
+        osc.frequency.value = frequency;
+        gain.gain.setValueAtTime(vol, ctx.currentTime);
+        // Smooth fade out at the end
+        const durSec = duration / 1000;
+        gain.gain.setValueAtTime(vol, ctx.currentTime + durSec * 0.7);
+        gain.gain.linearRampToValueAtTime(0, ctx.currentTime + durSec);
+
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(ctx.currentTime);
+        osc.stop(ctx.currentTime + durSec);
+
+        await wait(duration);
+      }
     }
 
     async function playFantasia() {
-      applyAudioVolume(els.fantasiaAudio);
+      applyAudioVolume(els.fantasiaAudio, 1);
       els.fantasiaAudio.currentTime = 0;
       await els.fantasiaAudio.play();
       log("fantasia.mp3를 재생했습니다.");
     }
 
-    function clearTimers() {
-      if (state.timerId) {
-        clearTimeout(state.timerId);
-        state.timerId = null;
+    // ── Slot Loop Management ──
+
+    function updateSlotStatus(slot, text, active = false) {
+      if (slot.els.statusMini) {
+        slot.els.statusMini.textContent = text;
+        slot.els.statusMini.classList.toggle("active", active);
       }
-      if (state.tickerId) {
-        clearInterval(state.tickerId);
-        state.tickerId = null;
-      }
-      state.nextPlayAt = null;
     }
 
-    function startTicker() {
-      if (state.tickerId) clearInterval(state.tickerId);
-      state.tickerId = setInterval(() => {
-        if (!state.nextPlayAt) return;
-        const remain = Math.max(0, (state.nextPlayAt - Date.now()) / 1000);
-        els.remainingText.textContent = formatSeconds(remain);
+    function clearSlotTimers(slot) {
+      if (slot.timerId) {
+        clearTimeout(slot.timerId);
+        slot.timerId = null;
+      }
+      if (slot.tickerId) {
+        clearInterval(slot.tickerId);
+        slot.tickerId = null;
+      }
+      slot.nextPlayAt = null;
+    }
+
+    function startSlotTicker(slot) {
+      if (slot.tickerId) clearInterval(slot.tickerId);
+      slot.tickerId = setInterval(() => {
+        if (!slot.nextPlayAt) return;
+        const remain = Math.max(0, (slot.nextPlayAt - Date.now()) / 1000);
+        if (slot.els.remainingText) slot.els.remainingText.textContent = formatSeconds(remain);
         if (remain <= 0) {
-          clearInterval(state.tickerId);
-          state.tickerId = null;
+          clearInterval(slot.tickerId);
+          slot.tickerId = null;
         }
       }, 200);
     }
+
+    function stopSlotLoop(slot) {
+      slot.running = false;
+      slot.activeRunId += 1;
+      clearSlotTimers(slot);
+      updateSlotStatus(slot, "대기", false);
+    }
+
+    async function runSlotCycle(slot, runId) {
+      if (!slot.running || runId !== slot.activeRunId || !state.running) return;
+      clearSlotTimers(slot);
+      const displayIndex = getSlotDisplayIndex(slot);
+      try {
+        syncSlotFromUI(slot);
+        const result = await recognizeCooldownForSlot(slot);
+        if (!slot.running || runId !== slot.activeRunId || !state.running) return;
+        const delayMs = Math.max(0, result.waitUntilSoundSec * 1000);
+        slot.nextPlayAt = Date.now() + delayMs;
+        updateSlotStatus(slot, "대기 중", true);
+        startSlotTicker(slot);
+        slot.timerId = setTimeout(async () => {
+          if (!slot.running || runId !== slot.activeRunId || !state.running) return;
+          try {
+            await playSlotSound(slot);
+          } catch (error) {
+            log(`슬롯${displayIndex} 소리 재생 실패: ${error.message}`);
+          }
+          if (!slot.running || runId !== slot.activeRunId || !state.running) return;
+          const repeatDelay = Math.max(0, slot.repeatAfterSec * 1000);
+          if (slot.els.remainingText) slot.els.remainingText.textContent = "재인식 대기";
+          updateSlotStatus(slot, "재인식 대기", true);
+          slot.timerId = setTimeout(() => {
+            void runSlotCycle(slot, runId);
+          }, repeatDelay);
+        }, delayMs);
+      } catch (error) {
+        log(`슬롯${displayIndex} 오류: ${error.message}`);
+        updateSlotStatus(slot, "오류", false);
+        if (!slot.running || runId !== slot.activeRunId || !state.running) return;
+        const retryMs = Math.max(1000, slot.repeatAfterSec * 1000);
+        slot.timerId = setTimeout(() => {
+          void runSlotCycle(slot, runId);
+        }, retryMs);
+      }
+    }
+
+    // ── Global Start/Stop ──
+
+    async function startLoop() {
+      if (state.running) return;
+      if (!state.stream) {
+        await selectScreen();
+      }
+      await unlockAudio();
+
+      // Sync all slot data from UI
+      for (const slot of state.slots) {
+        syncSlotFromUI(slot);
+      }
+
+      state.running = true;
+      state.globalRunId += 1;
+      els.startBtn.disabled = true;
+      els.stopBtn.disabled = false;
+      els.singleRead.disabled = true;
+      els.selectScreen.disabled = true;
+
+      const globalRunId = state.globalRunId;
+      let countdown = 5;
+      log(`${countdown}초 후 반복 인식을 시작합니다... (${state.slots.length}개 슬롯)`);
+
+      const nextCountdown = () => {
+        if (!state.running || globalRunId !== state.globalRunId) return;
+        if (countdown > 0) {
+          setStatus(`${countdown}초 후 시작`, "waiting");
+          countdown--;
+          setTimeout(nextCountdown, 1000);
+        } else {
+          setStatus("실행 중", "running");
+          log("반복 인식을 시작했습니다.");
+          for (const slot of state.slots) {
+            slot.running = true;
+            slot.activeRunId += 1;
+            updateSlotStatus(slot, "실행 중", true);
+            void runSlotCycle(slot, slot.activeRunId);
+          }
+        }
+      };
+      nextCountdown();
+    }
+
+    async function singleRead() {
+      if (!state.stream) {
+        await selectScreen();
+      }
+      for (const slot of state.slots) {
+        syncSlotFromUI(slot);
+      }
+      for (const slot of state.slots) {
+        try {
+          const result = await recognizeCooldownForSlot(slot);
+          log(`슬롯${getSlotDisplayIndex(slot)}: 1회 인식 완료: ${result.waitUntilSoundSec.toFixed(2)}초 후 알림 값`);
+        } catch (error) {
+          log(`슬롯${getSlotDisplayIndex(slot)}: 1회 인식 실패: ${error.message}`);
+        }
+      }
+      setStatus("1회 인식 완료", "");
+    }
+
+    function stopStreamOnly() {
+      const stream = state.stream;
+      state.stream = null;
+      if (stream) {
+        for (const track of stream.getTracks()) {
+          try {
+            track.enabled = false;
+            track.stop();
+          } catch (_) {
+            // Track cleanup should be best effort during page shutdown.
+          }
+        }
+      }
+      els.sourceVideo.pause();
+      els.sourceVideo.srcObject = null;
+      els.sourceVideo.removeAttribute("src");
+      try {
+        els.sourceVideo.load();
+      } catch (_) {
+        // Some browsers do not like load() during unload; detaching srcObject is enough there.
+      }
+      // Clear all slot canvases
+      for (const slot of state.slots) {
+        if (slot.canvasEl) {
+          const ctx = slot.canvasEl.getContext("2d");
+          ctx.clearRect(0, 0, slot.canvasEl.width, slot.canvasEl.height);
+        }
+      }
+      els.emptyPreview.classList.remove("hidden");
+      // Hide all crop boxes
+      document.querySelectorAll(".crop-box").forEach(b => b.classList.remove("visible"));
+    }
+
+    function stopAll(message = "종료했습니다.") {
+      state.running = false;
+      state.globalRunId += 1;
+      for (const slot of state.slots) {
+        stopSlotLoop(slot);
+      }
+      els.startBtn.disabled = false;
+      els.stopBtn.disabled = true;
+      els.singleRead.disabled = false;
+      els.selectScreen.disabled = false;
+      els.alarmAudio.pause();
+      els.alarmAudio.currentTime = 0;
+      stopStreamOnly();
+      setStatus("대기 중", "");
+      log(message);
+    }
+
+    function releasePageResources() {
+      state.running = false;
+      state.globalRunId += 1;
+      for (const slot of state.slots) {
+        stopSlotLoop(slot);
+      }
+      clearFantasiaTimer(null);
+      els.alarmAudio.pause();
+      els.fantasiaAudio.pause();
+      stopStreamOnly();
+    }
+
+    // ── Fantasia Timer ──
 
     function clearFantasiaTimer(label = "-") {
       if (state.fantasiaTimerId) {
@@ -1562,134 +2454,18 @@
       log("fantasia 예약을 취소했습니다.");
     }
 
-    async function startLoop() {
-      if (state.running) return;
-      if (!state.stream) {
-        await selectScreen();
-      }
-      await unlockAudio();
-      state.running = true;
-      state.activeRunId += 1;
-      els.startBtn.disabled = true;
-      els.stopBtn.disabled = false;
-      els.singleRead.disabled = true;
-      els.selectScreen.disabled = true;
+    // ── Service Account JSON ──
 
-      const runId = state.activeRunId;
-      let countdown = 5;
-      log(`${countdown}초 후 반복 인식을 시작합니다...`);
-
-      const nextCountdown = () => {
-        if (!state.running || runId !== state.activeRunId) return;
-        if (countdown > 0) {
-          setStatus(`${countdown}초 후 시작`, "waiting");
-          countdown--;
-          state.timerId = setTimeout(nextCountdown, 1000);
-        } else {
-          setStatus("실행 중", "running");
-          log("반복 인식을 시작했습니다.");
-          void runCycle(runId);
-        }
-      };
-      nextCountdown();
+    async function loadServiceAccountFile(file) {
+      const data = JSON.parse(await file.text());
+      els.vertexProjectId.value = data.project_id || els.vertexProjectId.value;
+      els.vertexClientEmail.value = data.client_email || els.vertexClientEmail.value;
+      els.vertexPrivateKey.value = data.private_key || els.vertexPrivateKey.value;
+      persistSettingsIfEnabled();
+      log("서비스 계정 JSON을 읽었습니다.");
     }
 
-    async function runCycle(runId) {
-      if (!state.running || runId !== state.activeRunId) return;
-      clearTimers();
-      try {
-        const result = await recognizeCooldown();
-        if (!state.running || runId !== state.activeRunId) return;
-        const delayMs = Math.max(0, result.waitUntilSoundSec * 1000);
-        state.nextPlayAt = Date.now() + delayMs;
-        setStatus("알림 대기 중", "waiting");
-        startTicker();
-        state.timerId = setTimeout(async () => {
-          if (!state.running || runId !== state.activeRunId) return;
-          try {
-            await playAlarm();
-          } catch (error) {
-            log(`소리 재생 실패: ${error.message}`);
-          }
-          if (!state.running || runId !== state.activeRunId) return;
-          const repeatDelay = Math.max(0, readNumber(els.repeatAfterSec, 3) * 1000);
-          els.remainingText.textContent = "재인식 대기";
-          setStatus("재인식 대기 중", "waiting");
-          state.timerId = setTimeout(() => {
-            void runCycle(runId);
-          }, repeatDelay);
-        }, delayMs);
-      } catch (error) {
-        log(`오류: ${error.message}`);
-        setStatus("오류 후 대기", "waiting");
-        if (!state.running || runId !== state.activeRunId) return;
-        const retryMs = Math.max(1000, readNumber(els.repeatAfterSec, 3) * 1000);
-        state.timerId = setTimeout(() => {
-          void runCycle(runId);
-        }, retryMs);
-      }
-    }
-
-    async function singleRead() {
-      if (!state.stream) {
-        await selectScreen();
-      }
-      const result = await recognizeCooldown();
-      setStatus("1회 인식 완료", "");
-      log(`1회 인식 완료: ${result.waitUntilSoundSec.toFixed(2)}초 후 알림 값`);
-    }
-
-    function stopStreamOnly() {
-      const stream = state.stream;
-      state.stream = null;
-      if (stream) {
-        for (const track of stream.getTracks()) {
-          try {
-            track.enabled = false;
-            track.stop();
-          } catch (_) {
-            // Track cleanup should be best effort during page shutdown.
-          }
-        }
-      }
-      els.sourceVideo.pause();
-      els.sourceVideo.srcObject = null;
-      els.sourceVideo.removeAttribute("src");
-      try {
-        els.sourceVideo.load();
-      } catch (_) {
-        // Some browsers do not like load() during unload; detaching srcObject is enough there.
-      }
-      const ctx = els.captureCanvas.getContext("2d");
-      ctx.clearRect(0, 0, els.captureCanvas.width, els.captureCanvas.height);
-      els.emptyPreview.classList.remove("hidden");
-      els.cropBox.classList.remove("visible");
-    }
-
-    function stopAll(message = "종료했습니다.") {
-      state.running = false;
-      state.activeRunId += 1;
-      clearTimers();
-      els.startBtn.disabled = false;
-      els.stopBtn.disabled = true;
-      els.singleRead.disabled = false;
-      els.selectScreen.disabled = false;
-      els.alarmAudio.pause();
-      els.alarmAudio.currentTime = 0;
-      stopStreamOnly();
-      setStatus("대기 중", "");
-      log(message);
-    }
-
-    function releasePageResources() {
-      state.running = false;
-      state.activeRunId += 1;
-      clearTimers();
-      clearFantasiaTimer(null);
-      els.alarmAudio.pause();
-      els.fantasiaAudio.pause();
-      stopStreamOnly();
-    }
+    // ── Events ──
 
     function attachEvents() {
       els.providerVertex.addEventListener("click", () => switchProvider("vertex"));
@@ -1722,7 +2498,6 @@
         els.customApiKey,
         els.customModelId,
         els.customPartOrder,
-        els.alarmVolume,
         els.fantasiaMinutes,
         els.lowLoadCapture
       ];
@@ -1730,11 +2505,6 @@
         input.addEventListener("input", persistSettingsIfEnabled);
       }
       els.customPartOrder.addEventListener("change", persistSettingsIfEnabled);
-      els.cooldownPreset.addEventListener("change", () => {
-        applyCooldownPreset(els.cooldownPreset.value);
-      });
-      els.notifyOffsetSec.addEventListener("input", markCooldownPresetCustom);
-      els.repeatAfterSec.addEventListener("input", markCooldownPresetCustom);
       els.saveSettings.addEventListener("change", () => {
         if (els.saveSettings.checked) {
           saveSettings();
@@ -1766,13 +2536,7 @@
         }
       });
       els.stopBtn.addEventListener("click", () => stopAll("사용자가 종료했습니다."));
-      els.testSound.addEventListener("click", async () => {
-        try {
-          await playAlarm();
-        } catch (error) {
-          log(`소리 테스트 실패: ${error.message}`);
-        }
-      });
+
       els.fantasiaStart.addEventListener("click", async () => {
         try {
           await startFantasiaTimer();
@@ -1790,55 +2554,21 @@
         }
       });
 
-      for (const input of [els.cropX, els.cropY, els.cropSize]) {
-        input.addEventListener("input", updateCropFromInputs);
-      }
+      // Add slot button
+      els.addSlotBtn.addEventListener("click", () => {
+        addSlot();
+      });
 
-      els.sourceVideo.addEventListener("loadedmetadata", renderCropBox);
-      window.addEventListener("resize", renderCropBox);
+      els.sourceVideo.addEventListener("loadedmetadata", renderAllCropBoxes);
+      window.addEventListener("resize", renderAllCropBoxes);
       window.addEventListener("pagehide", releasePageResources);
       window.addEventListener("beforeunload", releasePageResources);
-
-      els.cropBox.addEventListener("pointerdown", (event) => {
-        event.preventDefault();
-        const mode = event.target?.dataset?.handle === "resize" ? "resize" : "move";
-        const point = pointToVideoCoords(event.clientX, event.clientY);
-        state.drag = {
-          mode,
-          startX: point.x,
-          startY: point.y,
-          crop: { ...state.crop }
-        };
-        els.cropBox.setPointerCapture(event.pointerId);
-      });
-
-      els.cropBox.addEventListener("pointermove", (event) => {
-        if (!state.drag) return;
-        const point = pointToVideoCoords(event.clientX, event.clientY);
-        const dx = point.x - state.drag.startX;
-        const dy = point.y - state.drag.startY;
-        if (state.drag.mode === "move") {
-          state.crop.x = state.drag.crop.x + dx;
-          state.crop.y = state.drag.crop.y + dy;
-        } else {
-          const delta = Math.max(dx, dy);
-          state.crop.size = state.drag.crop.size + delta;
-        }
-        renderCropBox();
-      });
-
-      els.cropBox.addEventListener("pointerup", () => {
-        state.drag = null;
-      });
-      els.cropBox.addEventListener("pointercancel", () => {
-        state.drag = null;
-      });
     }
 
     attachEvents();
     loadSettings();
     setStatus("대기 중", "");
-    log("준비되었습니다. chicken.mp3는 index.html과 같은 폴더에 두면 됩니다.");
+    log("준비되었습니다. 스킬 슬롯을 추가하고 각각의 인식 영역을 설정하세요.");
   </script>
 </body>
 </html>
